@@ -28,7 +28,8 @@
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.css",
-              "src/styles.less"
+              "src/styles.less",
+              "node_modules/ml5/dist/ml5.min.js"
             ],
             "scripts": [],
             "es5BrowserSupport": true
