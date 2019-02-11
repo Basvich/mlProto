@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Location } from '@angular/common';
 import * as ml5 from 'ml5';
+import * as p5 from 'p5';
+import 'p5/lib/addons/p5.sound';
+import 'p5/lib/addons/p5.dom';
 
-interface IDataImage {
+interface ITrainDataImage {
   type: string;
   dir: string;
   files: Array<string>;
@@ -14,7 +18,8 @@ interface IDataImage {
   styleUrls: ['./load-ml5.component.less']
 })
 export class LoadMl5Component implements OnInit {
-
+  featureExtractor: any;
+  classifier: any;
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
@@ -50,7 +55,7 @@ export class LoadMl5Component implements OnInit {
         console.error(error);
       }
     );
-    this.http.get('../../assets/imgSrc/typeA', { }).subscribe(
+    this.http.get('../../assets/imgSrc/typeA', {}).subscribe(
       (data) => {
         console.log('ok');
       },
@@ -61,7 +66,34 @@ export class LoadMl5Component implements OnInit {
   }
 
   learn1() {
+    this.http.get('../../assets/imgSrc/imgList.json', {}).subscribe(
+      (data: any) => {
+        console.log('ok');
+        this.train(data);
+      },
+      (error) => {
+        console.error(error);
+      }
+    );
+  }
 
+  protected train(data: Array<ITrainDataImage>) {
+    if (!this.featureExtractor) {
+      this.featureExtractor = ml5.featureExtractor('MobileNet');
+    }
+    if (!this.classifier) {
+      this.classifier = this.featureExtractor.classification();
+    }
+
+    for (const group of data) {
+      const label = group.type;
+      const baseDir = Location.joinWithSlash('../../assets/imgSrc', group.dir);
+      for (const fileName of group.files) {
+        const dir = Location.joinWithSlash(baseDir, fileName);
+        const mg = p5.loadImage(dir);
+        this.classifier.addImage(mg, label);
+      }
+    }
   }
 
 }
