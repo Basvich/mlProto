@@ -28,10 +28,13 @@
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.css",
-              "src/styles.less",
-              "node_modules/ml5/dist/ml5.min.js"
+              "src/styles.less"
             ],
-            "scripts": [],
+            "scripts": [
+              "./node_modules/p5/lib/p5.min.js",
+              "./node_modules/p5/lib/addons/p5.sound.js",
+              "./node_modules/p5/lib/addons/p5.dom.js"
+            ],
             "es5BrowserSupport": true
           },
           "configurations": {

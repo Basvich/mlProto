@@ -2,6 +2,9 @@
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.3.0.
 
+## NOTA ##
+Hace falta seguir los pasos en https://github.com/tensorflow/tfjs/issues/494` para elimiminar unos errores que ponen: Module not found: Error: Can't resolve 'crypto'
+Para el error `Module not found: Error: Can't resolve 'fs'` hace falta seguir instrucciones en `https://stackoverflow.com/questions/54533766/tensorflow-with-angular-7-failed-to-compile` 
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.

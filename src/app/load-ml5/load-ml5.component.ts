@@ -27,11 +27,11 @@ export class LoadMl5Component implements OnInit {
 
   test1() {
     const image = document.getElementById('image');
-    const classifier = ml5.imageClassifier('MobileNet', function () {
+    const classifier = ml5.imageClassifier('MobileNet', function() {
       console.log('Model Loaded!');
     });
 
-    classifier.predict(image, function (err, results) {
+    classifier.predict(image, function(err, results) {
       console.log('Predicho');
       console.log(results[0].className);
       console.log(results[0].probability.toFixed(4));
@@ -90,8 +90,15 @@ export class LoadMl5Component implements OnInit {
       const baseDir = Location.joinWithSlash('../../assets/imgSrc', group.dir);
       for (const fileName of group.files) {
         const dir = Location.joinWithSlash(baseDir, fileName);
-        const mg = p5.loadImage(dir);
-        this.classifier.addImage(mg, label);
+        //const mg = p5.loadImage(dir);
+        const img = new Image();
+        img.src = dir;
+        img.onload = () => {
+
+          this.classifier.addImage(img, label);
+          console.log(`imagen cargada como ${label}`);
+        };
+        //this.classifier.addImage(mg, label);
       }
     }
   }

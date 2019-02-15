@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
 import {  Tensor } from '@tensorflow/tfjs';
 import * as p5 from 'p5';
+import 'p5/lib/addons/p5.sound';
+import 'p5/lib/addons/p5.dom';
 
 @Component({
   selector: 'app-xor-tf',
@@ -34,14 +36,13 @@ export class XorTfComponent implements OnInit {
   }
 
   setup() {
-
     const sketch = (s) => {
       s.preload = () => {
         // preload code
       };
       s.setup = () => {
         const cc = s.createCanvas(400, 400);
-        // cc.parent('myContainer');
+        // ccc.parent('myContainer');
       };
       // s.draw = () => {
         // s.background(255);
