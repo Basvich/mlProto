@@ -1,39 +1,56 @@
 <div class="row">
   <div class="col">
-      <img src="https://ml5js.org/docs/assets/img/bird.jpg"  crossorigin="anonymous" id="image" width="200">
+    <img src="https://ml5js.org/docs/assets/img/bird.jpg" crossorigin="anonymous" id="image" width="200">
   </div>
   <div class="col">
     <button type="button" class="btn" (click)="test1()" ngbTooltip="Test">
-       Test bird clasify
-     </button>
+      Test bird clasify
+    </button>
   </div>
 </div>
 <div class="row">
   <div class="col">
-     <button type="button" class="btn" (click)="test2()" ngbTooltip="Test">
-         Test
-     </button>
+    <button type="button" class="btn" (click)="test2()" ngbTooltip="Test">
+      Test
+    </button>
   </div>
   <div class="col">
-      <img src="../../assets/imgSrc/typeA/WIN_20190130_16_34_27_Pro.jpg"  crossorigin="anonymous" id="imageA1" width="200">
+    <img src="../../assets/imgSrc/typeA/WIN_20190130_16_34_27_Pro.jpg" crossorigin="anonymous" id="imageA1" width="200">
   </div>
 </div>
 <div class="row">
-    <div class="col">
-        <button type="button" class="btn" (click)="testObservable()" ngbTooltip="">
-            Test observable
-        </button>
-     </div>
-     <div class="col">
-      <button type="button" class="btn" (click)="testObservable2()" ngbTooltip="">
-          Test observable 2
-      </button>
-   </div>
-    <div class="col">
-       <button type="button" class="btn" (click)="learn1()" ngbTooltip="">
-           Training 1
-       </button>
-    </div>
-    <div class="col"></div>
+  <div class="col">
+    <button type="button" class="btn" (click)="testObservable()" ngbTooltip="">
+      Test observable
+    </button>
+    <button type="button" class="btn" (click)="train1()" ngbTooltip="">
+      Train
+    </button>
   </div>
-
+  <div class="col">
+    <button type="button" class="btn" (click)="testObservable2()" ngbTooltip="">
+      Test observable 2
+    </button>
+  </div>
+  <div class="col">
+    <button type="button" class="btn" (click)="learn1()" ngbTooltip="">
+      Training 1
+    </button>
+  </div>
+  <div class="col"></div>
+</div>
+<div class="row">
+  <div class="col">
+    <button type="button" class="btn" (click)="loadImgTest()" ngbTooltip="">
+      ImageToTest
+    </button>
+  </div>
+  <div clas="col">
+    <img #miImg crossorigin="anonymous" id="miTestImg" width="200">
+  </div>
+  <div class="col">
+    <button type="button" class="btn" (click)="showStat()" ngbTooltip="">
+      ShowStatus
+    </button>
+  </div>
+</div>
