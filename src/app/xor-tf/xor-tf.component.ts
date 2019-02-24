@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
-import {  Tensor } from '@tensorflow/tfjs';
+// import {  Tensor } from '@tensorflow/tfjs';
 import * as p5 from 'p5';
-import 'p5/lib/addons/p5.sound';
+// import 'p5/lib/addons/p5.sound';
 import 'p5/lib/addons/p5.dom';
+// import { timingSafeEqual } from 'crypto';
 
 @Component({
   selector: 'app-xor-tf',
@@ -45,8 +46,8 @@ export class XorTfComponent implements OnInit {
         // ccc.parent('myContainer');
       };
       // s.draw = () => {
-        // s.background(255);
-        // s.rect(100, 100, 100, 100);
+      // s.background(255);
+      // s.rect(100, 100, 100, 100);
       // };
     };
 
@@ -54,6 +55,11 @@ export class XorTfComponent implements OnInit {
 
     this.cols = this.canvasP5.width / this.resolution;
     this.rows = this.canvasP5.height / this.resolution;
+
+    this.canvasP5.draw = () => {
+      this.draw();
+    };
+
 
     // Create the input data
     const inputs = [];
@@ -64,9 +70,8 @@ export class XorTfComponent implements OnInit {
         inputs.push([x1, x2]);
       }
     }
+
     this.xs = tf.tensor2d(inputs);
-
-
     this.model = tf.sequential();
     const hidden = tf.layers.dense({
       inputShape: [2],
@@ -85,15 +90,16 @@ export class XorTfComponent implements OnInit {
       optimizer,
       loss: 'meanSquaredError'
     });
-
-    setTimeout(this.train, 10);
+    const thats = this;
+    setTimeout(thats.train.call(thats), 10);
 
   }
 
   train() {
+    const thats = this;
     this.trainModel().then(result => {
-      /// console.log(result.history.loss[0]);
-      setTimeout(this. train, 10);
+      console.log(result.history.loss[0]);
+      setTimeout(this.train.call(thats), 10);
     });
   }
 
@@ -123,12 +129,11 @@ export class XorTfComponent implements OnInit {
           this.canvasP5.textSize(8);
           this.canvasP5.textAlign(this.canvasP5.CENTER, this.canvasP5.CENTER);
           this.canvasP5.text(this.canvasP5.nf(yValues[index], 1, 2),
-           i * this.resolution + this.resolution / 2, j * this.resolution + this.resolution / 2);
+            i * this.resolution + this.resolution / 2, j * this.resolution + this.resolution / 2);
           index++;
         }
       }
     });
-
   }
 
 }

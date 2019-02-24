@@ -4,6 +4,7 @@ import { NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { FileDropModule } from 'ngx-file-drop';
 import { LoadMl5Component } from './load-ml5/load-ml5.component';
 import { XorTfComponent } from './xor-tf/xor-tf.component';
 import { LoadTrainingImgsComponent } from './load-training-imgs/load-training-imgs.component';
@@ -18,7 +19,8 @@ import { LoadTrainingImgsComponent } from './load-training-imgs/load-training-im
   imports: [
     BrowserModule,
     AppRoutingModule,
-    HttpClientModule
+    HttpClientModule,
+    FileDropModule
   ],
   providers: [],
   bootstrap: [AppComponent]

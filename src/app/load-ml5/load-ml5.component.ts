@@ -5,7 +5,7 @@ import { Location } from '@angular/common';
 import * as Rx from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 
-import * as ml5 from 'ml5';
+// import * as ml5 from 'ml5';
 import * as p5 from 'p5';
 import 'p5/lib/addons/p5.sound';
 import 'p5/lib/addons/p5.dom';
@@ -35,10 +35,10 @@ export class LoadMl5Component implements OnInit {
 
   protected createClasifier() {
     if (!this.featureExtractor) {
-      this.featureExtractor = ml5.featureExtractor('MobileNet');
+      // this.featureExtractor = ml5.featureExtractor('MobileNet');
     }
     if (!this.classifier) {
-      this.classifier = this.featureExtractor.classification();
+      // this.classifier = this.featureExtractor.classification();
     }
   }
 
@@ -60,11 +60,11 @@ export class LoadMl5Component implements OnInit {
 
   }
 
-  test2() {
-    const features = ml5.featureExtractor('MobileNet');
+  private test2() {
+   /*  const features = ml5.featureExtractor('MobileNet');
     const classifier = features.classification();
     const puffinImage1 = document.getElementById('imageA1');
-    classifier.addImage(puffinImage1, 'typeA');
+    classifier.addImage(puffinImage1, 'typeA'); */
   }
 
   test3() {
@@ -133,7 +133,7 @@ export class LoadMl5Component implements OnInit {
 
   train1() {
     let loss = 0;
-    this.classifier.train(function (lossValue) {
+   /*  this.classifier.train(function (lossValue) {
       if (lossValue) {
         loss = lossValue;
         console.log(`loss: ${loss}`);
@@ -142,7 +142,7 @@ export class LoadMl5Component implements OnInit {
         console.log(`finall loss: ${loss}`);
         // select('#loss').html('Done Training! Final Loss: ' + loss);
       }
-    });
+    }); */
   }
 
   testObservable2() {
@@ -173,7 +173,7 @@ export class LoadMl5Component implements OnInit {
   }
 
   protected train(data: Array<ITrainDataImage>) {
-    if (!this.featureExtractor) {
+    /* if (!this.featureExtractor) {
       this.featureExtractor = ml5.featureExtractor('MobileNet');
     }
     if (!this.classifier) {
@@ -193,7 +193,7 @@ export class LoadMl5Component implements OnInit {
         };
         // this.classifier.addImage(mg, label);
       }
-    }
+    } */
   }
 
 
