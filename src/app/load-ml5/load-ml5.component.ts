@@ -214,7 +214,7 @@ export class LoadMl5Component implements OnInit {
         observer.next(res);
         observer.complete();
       };
-      img.onerror = function (err) {
+      img.onerror = function(err) {
         observer.error(err);
       };
     });
@@ -253,7 +253,7 @@ export class LoadMl5Component implements OnInit {
     return Rx.Observable.create(function (observer: Rx.Subscriber<any>) {
       const img = new Image();
       img.src = dir;
-      img.onload = function () {
+      img.onload = function() {
         observer.next(img);
         observer.complete();
       };

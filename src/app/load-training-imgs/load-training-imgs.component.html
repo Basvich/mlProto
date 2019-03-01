@@ -1,11 +1,28 @@
 <div class="row">
-  <div class="col">
-
+  <div class="col" id="learningZone">
+    <div class="row">
+      <div class="col">
+        <span>Ficheros de aprendizaje</span>
+      </div>
+      <div class="col">
+          <button type="button" class="btn" (click)="test1()" ngbTooltip="Test">
+              Test bird clasify
+            </button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <file-drop headertext="Drop files here" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+          <span>optional content (don't set headertext then)</span>
+        </file-drop>
+      </div>
+      <div class="col">
+        <img #miImg crossorigin="anonymous" id="miTestImg" width="100">
+        <span>{{testImgLabel}}</span>
+      </div>
+    </div>
   </div>
   <div class="col">
-    <file-drop headertext="Drop files here" (onFileDrop)="dropped($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
-      <span>optional content (don't set headertext then)</span>
-    </file-drop>
     <div class="upload-table">
       <table class="table">
         <thead>

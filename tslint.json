@@ -6,6 +6,7 @@
   "rules": {
     "array-type": false,
     "arrow-parens": false,
+    "curly": [true, "ignore-same-line"],
     "deprecation": {
       "severity": "warn"
     },
@@ -77,6 +78,7 @@
     "use-life-cycle-interface": true,
     "use-pipe-transform-interface": true,
     "component-class-suffix": true,
-    "directive-class-suffix": true
+    "directive-class-suffix": true,
+    "whitespace": [true, "check-branch","check-typecast"]
   }
 }
