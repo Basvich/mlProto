@@ -251,7 +251,7 @@ export class LoadMl5Component implements OnInit {
     const ifi = this.rndNext(group.files.length);
     const dir = Location.joinWithSlash(baseDir, group.files[ifi]);
     return Rx.Observable.create(function (observer: Rx.Subscriber<any>) {
-      const img = new Image();
+      const img: HTMLImageElement = new Image();
       img.src = dir;
       img.onload = function() {
         observer.next(img);
