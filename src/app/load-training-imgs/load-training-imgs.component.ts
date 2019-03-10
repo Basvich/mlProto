@@ -6,6 +6,7 @@ import { forEach } from '@angular/router/src/utils/collection';
 import { delay, mergeMap, map } from 'rxjs/operators';
 import { interceptingHandler } from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
+import { MlImgClassifier } from './ml-img-classifier';
 // import { Image } from 'p5';
 
 
@@ -20,13 +21,13 @@ interface Ifl {
   [x: string]: any;
 }
 
-interface Ifl2 extends Ifl{
-  fileReaded: string | ArrayBuffer ;
+interface Ifl2 extends Ifl {
+  fileReaded: string | ArrayBuffer;
   img?: HTMLImageElement;
   label: string;
 }
 
-interface Ifl3 extends Ifl2{
+interface Ifl3 extends Ifl2 {
   data: tf.Tensor;
 }
 
@@ -36,6 +37,8 @@ interface Ifl3 extends Ifl2{
   styleUrls: ['./load-training-imgs.component.less']
 })
 export class LoadTrainingImgsComponent implements OnInit {
+
+  protected mlClass: MlImgClassifier;
   public files: UploadFile[] = [];
 
   @ViewChild('miImg') imgPreview: ElementRef;
@@ -44,7 +47,11 @@ export class LoadTrainingImgsComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
+    this.initClasifier();
   }
+
+
+
   public test1() {
     const d = ['a', 'b', 'c', 'd'];
     miObsTest2$(d).subscribe(
@@ -54,6 +61,11 @@ export class LoadTrainingImgsComponent implements OnInit {
       (err) => console.error(err),
       () => console.log('acabose')
     );
+  }
+
+  public test2() {
+    const d = ['a', 'b', 'c', 'd'];
+    const o = getClasses(d);
   }
 
   public dropped(event: UploadEvent) {
@@ -85,7 +97,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       (val) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
-        console.log(`img count ${cc++}`);
+        console.log(`img count ${cc++} label: '${val.label}'`);
       },
       (err) => console.error(err),
       () => {
@@ -100,6 +112,12 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   public fileLeave(event) {
     console.log(event);
+  }
+
+
+  public initClasifier() {
+    if (this.mlClass) return;
+    this.mlClass = new MlImgClassifier();
   }
 
 }
@@ -117,9 +135,9 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
     mergeMap((val: Ifl) => readFileSFEAsDataURL2$(val)),
     mergeMap((val: Ifl2) => srcToImg$(val)),
     map((val: Ifl3) => {
-      const prov=val.data;
+      const prov = val.data;
       console.log('Modificando tensor');
-      val.data=loadAndProcessImage(prov);
+      val.data = loadAndProcessImage(prov);
       prov.dispose();
       return val;
     })
@@ -180,7 +198,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
     const fileReader = new FileReader();
     fileReader.onload = () => {
       console.log('cargado fichero');
-      const res: Ifl2 ={...fileNfo, fileReaded:fileReader.result};
+      const res: Ifl2 = { ...fileNfo, fileReaded: fileReader.result };
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
     };
@@ -201,13 +219,13 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
-    img.onload = function() {
-      const res: Ifl3 = {...src, data: tf.fromPixels(img)};
+    img.onload = function () {
+      const res: Ifl3 = { ...src, data: tf.fromPixels(img) };
       console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();
     };
-    img.onerror = function(err) {
+    img.onerror = function (err) {
       observable.error(err);
     };
     img.src = src.fileReaded as any;
@@ -240,8 +258,8 @@ function getFileLabel(fullPath: string): string {
 }
 
 /** Recorta el tamaño mas largo para convertir la imagen en cuadrada
- * @param {tf.Tensor} img
- * @returns {tf.Tensor}
+ * @param img a recortar
+ * @returns un tenbsor recortado
  */
 function cropImage(img: tf.Tensor): tf.Tensor {
   const width = img.shape[0];
@@ -284,7 +302,7 @@ function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
 }
 
 function sendMessage(message: string, cb: (err: any, res: any) => void) {
-  //sendJS.sendMsg(message, cb);
+  // sendJS.sendMsg(message, cb);
 }
 
 function sendMessage2(message: string): Rx.Observable<string> {
@@ -299,4 +317,19 @@ function sendMessage2(message: string): Rx.Observable<string> {
     }
   );
   return sendResult.asObservable();
+}
+
+/** Convierte un array de strings en un objeto (mapa) con esas labels
+ * como  propiedades del objeto, inicializadas a la posición
+*/
+function getClasses(classes: string[]) {
+  return classes.reduce((labels, label) => {
+    if (labels[label] !== undefined) {
+      return labels;
+    }
+    return {
+      ...labels,
+      [label]: Object.keys(labels).length,
+    };
+  }, {});
 }
