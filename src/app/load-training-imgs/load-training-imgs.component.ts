@@ -6,7 +6,7 @@ import { forEach } from '@angular/router/src/utils/collection';
 import { delay, mergeMap, map } from 'rxjs/operators';
 import { interceptingHandler } from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
-import { MlImgClassifier } from './ml-img-classifier';
+import { MlImgClassifier, IImgLabel } from './ml-img-classifier';
 // import { Image } from 'p5';
 
 
@@ -30,6 +30,9 @@ interface Ifl2 extends Ifl {
 interface Ifl3 extends Ifl2 {
   data: tf.Tensor;
 }
+
+
+
 
 @Component({
   selector: 'app-load-training-imgs',
@@ -65,7 +68,25 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   public test2() {
     const d = ['a', 'b', 'c', 'd'];
-    const o = getClasses(d);
+    const classes = getClasses(d);
+    const indices=[0, 1, 2];
+    const depth=3;
+    const res=tf.oneHot(indices, depth);
+    console.log(res.toString());
+    const classLength = Object.keys(classes).length;
+    const labelIndex = classes['b'];
+    const res2=tf.oneHot([1,2], 2);
+    console.log(res2.toString());
+  }
+
+  public testTrain(){
+    this.mlClass.train$().subscribe(
+      (data: tf.History) => {
+        console.log(data);
+      },
+      (err) => console.error(err),
+      () => console.log('done')
+    );
   }
 
   public dropped(event: UploadEvent) {
@@ -93,15 +114,18 @@ export class LoadTrainingImgsComponent implements OnInit {
   public dropped2(event: UploadEvent) {
     const files = event.files;
     let cc = 0;
+    const provDataIn = [];
     imageLabels$(files).subscribe(
       (val) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
         console.log(`img count ${cc++} label: '${val.label}'`);
+        provDataIn.push({ label: val.label, img: val.data });
       },
       (err) => console.error(err),
       () => {
-        console.log('acabose');
+        console.log(`acabose, tenemos ${provDataIn.length} items`);
+        this.trainData(provDataIn);
       }
     );
   }
@@ -118,6 +142,10 @@ export class LoadTrainingImgsComponent implements OnInit {
   public initClasifier() {
     if (this.mlClass) return;
     this.mlClass = new MlImgClassifier();
+  }
+
+  protected trainData(dataIn: IImgLabel[]) {
+    this.mlClass.addData(dataIn);
   }
 
 }
@@ -219,7 +247,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
-    img.onload = function () {
+    img.onload = function() {
       const res: Ifl3 = { ...src, data: tf.fromPixels(img) };
       console.log('pasada imagen a tensor');
       observable.next(res);
@@ -321,7 +349,7 @@ function sendMessage2(message: string): Rx.Observable<string> {
 
 /** Convierte un array de strings en un objeto (mapa) con esas labels
  * como  propiedades del objeto, inicializadas a la posición
-*/
+ */
 function getClasses(classes: string[]) {
   return classes.reduce((labels, label) => {
     if (labels[label] !== undefined) {
