@@ -34,6 +34,7 @@ export class MlImgClassifier{
   xs: tf.Tensor;
   ys: tf.Tensor;
   classes: any;
+  public lastModel: tf.Sequential;
 
   constructor(){
     this.init();
@@ -81,8 +82,13 @@ export class MlImgClassifier{
       });
     }, undefined);
   }
-
-  static miOneHot = (labelIndex: number, classLength: number) => tf.tidy(() => tf.oneHot(tf.tensor1d([labelIndex]).toInt(), classLength));
+/**
+ * OneHot encoding: https://hackernoon.com/what-is-one-hot-encoding-why-and-when-do-you-have-to-use-it-e3c6186d008f
+ *
+ * @static
+ * @memberof MlImgClassifier
+ */
+static miOneHot = (labelIndex: number, classLength: number) => tf.tidy(() => tf.oneHot(tf.tensor1d([labelIndex]).toInt(), classLength));
 
   protected static addImgData(tensors: Tensor[]): Tensor{
     console.log(`addImgData: ${tensors.length} tensores. El [0]: ${tensors[0].shape}`);
@@ -114,7 +120,11 @@ export class MlImgClassifier{
   public train$(params: IParams = {}): Observable<tf.History>{
     if (!this.ys || !this.xs ) throw new Error('incomplete training data');
     const model = this.getModel(this.pretrainedModel, this.classes, params);
+    this.lastModel=model;
     const batchSize = this.getBatchSize(params.batchSize, this.xs);
+    console.log(`model ${model.name}`);
+    console.log(`xs ${this.xs.shape}  `);
+    console.log(`ys ${this.ys.shape} `);
     return from(model.fit(this.xs, this.ys,{
       ...params,
       batchSize,
@@ -165,8 +175,11 @@ export class MlImgClassifier{
   }
 
   protected getModel(pretrainedModel: tf.Model, classes: number, params: IParams){
+    const dl=this.defaultLayers({ classes });
+    console.log('MlImgClassifier.getModel() layers:');
+    console.log(dl);
     const model = tf.sequential({
-      layers: this.defaultLayers({ classes }),
+      layers: dl,
     });
     const optimizer = tf.train.adam(0.0001);
     model.compile({

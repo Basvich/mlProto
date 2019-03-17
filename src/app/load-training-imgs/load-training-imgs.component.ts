@@ -1,12 +1,15 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule } from 'ngx-file-drop';
+import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
+import {UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule} from 'ngx-file-drop';
 import * as Rx from 'rxjs';
-import { any, Tensor3D } from '@tensorflow/tfjs';
-import { forEach } from '@angular/router/src/utils/collection';
-import { delay, mergeMap, map } from 'rxjs/operators';
-import { interceptingHandler } from '@angular/common/http/src/module';
+import {any, Tensor3D, Tensor} from '@tensorflow/tfjs';
+import {forEach} from '@angular/router/src/utils/collection';
+import {delay, mergeMap, map} from 'rxjs/operators';
+import {interceptingHandler} from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
-import { MlImgClassifier, IImgLabel } from './ml-img-classifier';
+import {MlImgClassifier, IImgLabel} from './ml-img-classifier';
+import MLClassifier from './index';
+import {IArgs} from './types';
+import {isArray} from 'util';
 // import { Image } from 'p5';
 
 
@@ -41,16 +44,104 @@ interface Ifl3 extends Ifl2 {
 })
 export class LoadTrainingImgsComponent implements OnInit {
 
-  protected mlClass: MlImgClassifier;
+  constructor() {}
+
+  protected bagClassifier: MlImgClassifier;
+  protected mlClassifier: MLClassifier;
+
+  protected provData2;
+
   public files: UploadFile[] = [];
 
   @ViewChild('miImg') imgPreview: ElementRef;
   public testImgLabel: string;
 
-  constructor() { }
+  deepDiffMapper = function deepDiffMapper() {
+    return {
+      VALUE_CREATED: 'created',
+      VALUE_UPDATED: 'updated',
+      VALUE_DELETED: 'deleted',
+      VALUE_UNCHANGED: 'unchanged',
+      map(obj1, obj2) {
+        if (this.isFunction(obj1) || this.isFunction(obj2)) {
+          throw new Error('Invalid argument. Function given, object expected.');
+        }
+        if (this.isValue(obj1) || this.isValue(obj2)) {
+          return {
+            type: this.compareValues(obj1, obj2),
+            data: (obj1 === undefined) ? obj2 : obj1
+          };
+        }
+
+        const diff = {};
+        for (const key in obj1) {
+          if (this.isFunction(obj1[key])) {
+            continue;
+          }
+
+          let value2;
+          if ('undefined' != typeof (obj2[key])) {
+            value2 = obj2[key];
+          }
+
+          diff[key] = this.map(obj1[key], value2);
+        }
+        for (const key in obj2) {
+          if (this.isFunction(obj2[key]) || ('undefined' != typeof (diff[key]))) {
+            continue;
+          }
+
+          diff[key] = this.map(undefined, obj2[key]);
+        }
+
+        return diff;
+
+      },
+      compareValues(value1, value2) {
+        if (value1 === value2) {
+          return this.VALUE_UNCHANGED;
+        }
+        if (this.isDate(value1) && this.isDate(value2) && value1.getTime() === value2.getTime()) {
+          return this.VALUE_UNCHANGED;
+        }
+        if ('undefined' == typeof (value1)) {
+          return this.VALUE_CREATED;
+        }
+        if ('undefined' == typeof (value2)) {
+          return this.VALUE_DELETED;
+        }
+
+        return this.VALUE_UPDATED;
+      },
+      isFunction(obj) {
+        return {}.toString.apply(obj) === '[object Function]';
+      },
+      isArray(obj) {
+        return {}.toString.apply(obj) === '[object Array]';
+      },
+      isObject(obj) {
+        return {}.toString.apply(obj) === '[object Object]';
+      },
+      isDate(obj) {
+        return {}.toString.apply(obj) === '[object Date]';
+      },
+      isValue(obj) {
+        return !this.isObject(obj) && !this.isArray(obj);
+      }
+    };
+  }();
 
   ngOnInit() {
     this.initClasifier();
+
+    const args: IArgs = {
+      onAddDataStart: () => console.log('onAddDataStart'),
+      onAddDataComplete: () => console.log('onAddDataComplete'),
+      onTrainStart: () => console.log('onTrainStart'),
+      onTrainComplete: () => console.log('onTrainComplete')
+
+    };
+    this.mlClassifier = new MLClassifier(args);
   }
 
 
@@ -69,23 +160,64 @@ export class LoadTrainingImgsComponent implements OnInit {
   public test2() {
     const d = ['a', 'b', 'c', 'd'];
     const classes = getClasses(d);
-    const indices=[0, 1, 2];
-    const depth=3;
-    const res=tf.oneHot(indices, depth);
+    const indices = [0, 1, 2];
+    const depth = 3;
+    const res = tf.oneHot(indices, depth);
     console.log(res.toString());
     const classLength = Object.keys(classes).length;
     const labelIndex = classes['b'];
-    const res2=tf.oneHot([1,2], 2);
+    const res2 = tf.oneHot([1, 2], 2);
     console.log(res2.toString());
   }
 
-  public testTrain(){
-    this.mlClass.train$().subscribe(
+  public testTrain() {
+    this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
         console.log(data);
       },
-      (err) => console.error(err),
+      (err) => {
+        console.error(err);
+        this.showModelsDifs(this.mlClassifier.lastModel, this.bagClassifier.lastModel);
+      },
       () => console.log('done')
+    );
+  }
+
+  public async testAddDataMlClass() {
+    const labels: string[] = this.provData2.map((val: IImgLabel) => val.label);
+    const arrImgs: HTMLImageElement[] = this.provData2.map((val: IImgLabel) => (val.img));
+    /* this.mlClassifier.addData(arrImgs,labels,'train').then(
+      (value) => {
+        console.log('add Data finalizado');
+        console.log(value);
+      },
+      (err) => {
+        console.log('Hubo un error');
+        console.error(err);
+      }
+    ).catch(
+      (rea)=>{
+        console.error(rea);
+      }
+    ); */
+    try {
+      await this.mlClassifier.addData(arrImgs, labels, 'train');
+      console.log('Finish add data');
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  public testTrainMlClass() {
+    this.mlClassifier.train().then(
+      (value) => {
+        console.log(value);
+        this.showModelsDifs(this.mlClassifier.lastModel, this.bagClassifier.lastModel);
+      }
+    ).catch(
+      (rea) => {
+        console.error(rea);
+      }
     );
   }
 
@@ -115,12 +247,14 @@ export class LoadTrainingImgsComponent implements OnInit {
     const files = event.files;
     let cc = 0;
     const provDataIn = [];
+    this.provData2 = [];
     imageLabels$(files).subscribe(
       (val) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
         console.log(`img count ${cc++} label: '${val.label}'`);
-        provDataIn.push({ label: val.label, img: val.data });
+        provDataIn.push({label: val.label, img: val.data});
+        this.provData2.push({label: val.label, img: val.img});
       },
       (err) => console.error(err),
       () => {
@@ -140,12 +274,18 @@ export class LoadTrainingImgsComponent implements OnInit {
 
 
   public initClasifier() {
-    if (this.mlClass) return;
-    this.mlClass = new MlImgClassifier();
+    if (this.bagClassifier) return;
+    this.bagClassifier = new MlImgClassifier();
   }
 
   protected trainData(dataIn: IImgLabel[]) {
-    this.mlClass.addData(dataIn);
+    this.bagClassifier.addData(dataIn);
+  }
+
+  protected showModelsDifs(base: tf.Model, otro: tf.Model) {
+    if (!base || !otro) return;
+    const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); //this.deepDiffMapper.map(base, otro);
+    console.log(rDiff);
   }
 
 }
@@ -158,7 +298,7 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
   if (!files) return;
   const files2 = files.filter(file => file.fileEntry.isFile);
   console.log(`Hay ${files2.length} imagenes`);
-  const files3: Ifl[] = files2.map((file) => ({ file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath) }));
+  const files3: Ifl[] = files2.map((file) => ({file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath)}));
   return Rx.from(files3).pipe(
     mergeMap((val: Ifl) => readFileSFEAsDataURL2$(val)),
     mergeMap((val: Ifl2) => srcToImg$(val)),
@@ -226,7 +366,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
     const fileReader = new FileReader();
     fileReader.onload = () => {
       console.log('cargado fichero');
-      const res: Ifl2 = { ...fileNfo, fileReaded: fileReader.result };
+      const res: Ifl2 = {...fileNfo, fileReaded: fileReader.result};
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
     };
@@ -247,8 +387,8 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
-    img.onload = function() {
-      const res: Ifl3 = { ...src, data: tf.fromPixels(img) };
+    img.onload = function () {
+      const res: Ifl3 = {...src, img, data: tf.fromPixels(img)};
       console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();
@@ -361,3 +501,87 @@ function getClasses(classes: string[]) {
     };
   }, {});
 }
+
+function getObjDiff(org: any, other: any, level: number, ignore: Array<string>=[]) {
+  if(level<0) return null;
+  function isEmpty(obj) {
+    if(obj===null) return true;
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) return false;
+    }
+    return true;
+  }
+  function isObject(val) {
+    return (typeof val === 'object' && val !== null);
+  }
+  function isValue(obj: any) {
+    return !isObject(obj) && !Array.isArray(obj);
+  }
+
+  function isFunction(functionToCheck) {
+    return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
+  }
+
+  function isFunction2(obj) {
+    return !!(obj && obj.constructor && obj.call && obj.apply);
+  };
+
+  function compareValues(val1, val2): string {
+    if (val1 === val2) return null;
+    if (typeof (val1) === 'undefined') return 'created';
+    if (typeof (val2) === 'undefined') return 'modified';
+    return `Values changed "${val1}" != "${val2}"`;
+  }
+
+  function compareArrays(arr1: Array<any>, arr2: Array<any>): Array<any> | string{
+    const l1=arr1.length;
+    const l2=arr2.length;
+    let allNulls=true;
+    if(l1===l2) {
+      if(l1===0) return null;  // Atajo para vacios
+      let f=Math.min(l1,l2,6);
+      let r=[];
+      for(let i=0; i<f; i++){
+        let r2=getObjDiff(arr1[i], arr2[i], level-1, ignore);
+        if(isEmpty(r2)) r2 = null;
+        if (r2!=null) allNulls=false;
+        r.push(r2);
+      }
+      if (!allNulls) return r;
+      else return null;
+    } else return `Array lenght changed: ${l1} != ${l2}`;
+  }
+
+  if (!org || !other) return null;
+  const rest = {};
+  for (const key in org) {
+    if (org.hasOwnProperty(key)) {
+      if(ignore.indexOf(key)>=0) continue;
+
+      const val1 = org[key];
+      if (isFunction(org[key])) {
+        continue;
+      }
+      const val2 = other[key];
+      if (isValue(val1)) {
+        const ds = compareValues(val1, val2);
+        if (ds != null) rest[key] = ds;
+      } else { // Son objectos
+        if (isArray(val1)) {
+          let r2;
+          r2=compareArrays(val1,val2);
+          if(r2!=null) rest[key]=r2;
+        } else  if (isObject(val1)) {
+          let r2;
+          if (level > 0) r2 = getObjDiff(val1, val2, level - 1, ignore);
+          else r2 = null;
+          if (!isEmpty(r2)) rest[key] = r2;
+        }
+      }
+    }
+  }
+  return rest;
+}
+
+
+
