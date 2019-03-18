@@ -43,7 +43,7 @@ const getModel = (pretrainedModel: tf.Model, data: IImageData, classes: number, 
 
     return args.trainingModel;
   }
-  const dl=defaultLayers({ classes })
+  const dl=defaultLayers({ classes });
   console.log('train.ts.getModel() layers:');
   console.log(dl);
   const model = tf.sequential({

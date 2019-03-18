@@ -171,13 +171,18 @@ export class LoadTrainingImgsComponent implements OnInit {
   }
 
   public testTrain() {
+    const thats=this;
     this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
         console.log(data);
       },
       (err) => {
         console.error(err);
-        this.showModelsDifs(this.mlClassifier.lastModel, this.bagClassifier.lastModel);
+        console.warn('Diferencia entre modelos preentrenados');
+        thats.showModelsDifs(thats.mlClassifier.pretrainedModel, thats.bagClassifier.pretrainedModel);
+        console.warn('Diferencia entre modelos');
+        thats.showModelsDifs(thats.mlClassifier.lastModel, thats.bagClassifier.lastModel);
+        console.log('final de mostrar diferencias');
       },
       () => console.log('done')
     );
@@ -285,6 +290,7 @@ export class LoadTrainingImgsComponent implements OnInit {
   protected showModelsDifs(base: tf.Model, otro: tf.Model) {
     if (!base || !otro) return;
     const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); //this.deepDiffMapper.map(base, otro);
+    
     console.log(rDiff);
   }
 

@@ -39,7 +39,7 @@ export class MlImgClassifier{
   constructor(){
     this.init();
   }
-  private pretrainedModel: tf.Model;
+  public pretrainedModel: tf.Model;
   /** Devuelve las dimensiones del modelo
    * @param md - Modelo del que obtiene las dimensiones
    */
@@ -85,8 +85,6 @@ export class MlImgClassifier{
 /**
  * OneHot encoding: https://hackernoon.com/what-is-one-hot-encoding-why-and-when-do-you-have-to-use-it-e3c6186d008f
  *
- * @static
- * @memberof MlImgClassifier
  */
 static miOneHot = (labelIndex: number, classLength: number) => tf.tidy(() => tf.oneHot(tf.tensor1d([labelIndex]).toInt(), classLength));
 
@@ -119,7 +117,8 @@ static miOneHot = (labelIndex: number, classLength: number) => tf.tidy(() => tf.
 
   public train$(params: IParams = {}): Observable<tf.History>{
     if (!this.ys || !this.xs ) throw new Error('incomplete training data');
-    const model = this.getModel(this.pretrainedModel, this.classes, params);
+    const nClasses= Object.keys(this.classes).length;
+    const model = this.getModel(this.pretrainedModel, nClasses, params);
     this.lastModel=model;
     const batchSize = this.getBatchSize(params.batchSize, this.xs);
     console.log(`model ${model.name}`);
