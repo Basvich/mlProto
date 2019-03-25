@@ -49,7 +49,10 @@ export class LoadTrainingImgsComponent implements OnInit {
   protected bagClassifier: MlImgClassifier;
   protected mlClassifier: MLClassifier;
 
-  protected provData2;
+  /** Copia de las imagenes soltadas */
+  protected provData2: ImgLabel[];
+  /** copia de las imagenes anteriores procesadas a tensor */
+  protected traindedData: ImgLabel[];
 
   public files: UploadFile[] = [];
 
@@ -171,26 +174,33 @@ export class LoadTrainingImgsComponent implements OnInit {
   }
 
   public testTrain() {
-    const thats=this;
+    const thats = this;
     this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
         console.log(data);
       },
       (err) => {
         console.error(err);
-        console.warn('Diferencia entre modelos preentrenados');
+        /*console.warn('Diferencia entre modelos preentrenados');
         thats.showModelsDifs(thats.mlClassifier.pretrainedModel, thats.bagClassifier.pretrainedModel);
         console.warn('Diferencia entre modelos');
         thats.showModelsDifs(thats.mlClassifier.lastModel, thats.bagClassifier.lastModel);
-        console.log('final de mostrar diferencias');
+        console.log('final de mostrar diferencias');*/
       },
       () => console.log('done')
     );
   }
 
+  /** Se vuelven a pasar las imagenes que se usaron para entrenar, sobre la red para ver que resultado dan */
+  public testAcurracyTrain() {
+    let nOk = 0;
+    const i1 = this.traindedData[0];
+    this.bagClassifier.predict(i1.img);
+  }
+
   public async testAddDataMlClass() {
     const labels: string[] = this.provData2.map((val: IImgLabel) => val.label);
-    const arrImgs: HTMLImageElement[] = this.provData2.map((val: IImgLabel) => (val.img));
+    const arrImgs: tf.Tensor[] = this.provData2.map((val: IImgLabel) => (val.img));
     /* this.mlClassifier.addData(arrImgs,labels,'train').then(
       (value) => {
         console.log('add Data finalizado');
@@ -217,7 +227,7 @@ export class LoadTrainingImgsComponent implements OnInit {
     this.mlClassifier.train().then(
       (value) => {
         console.log(value);
-        this.showModelsDifs(this.mlClassifier.lastModel, this.bagClassifier.lastModel);
+        // this.showModelsDifs(this.mlClassifier.lastModel, this.bagClassifier.lastModel);
       }
     ).catch(
       (rea) => {
@@ -226,6 +236,7 @@ export class LoadTrainingImgsComponent implements OnInit {
     );
   }
 
+  /** Funcion de ejemplo para el drop de ficheros */
   public dropped(event: UploadEvent) {
     this.files = event.files;
     for (const droppedFile of event.files) {
@@ -254,7 +265,7 @@ export class LoadTrainingImgsComponent implements OnInit {
     const provDataIn = [];
     this.provData2 = [];
     imageLabels$(files).subscribe(
-      (val) => {
+      (val: Ifl3) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
         console.log(`img count ${cc++} label: '${val.label}'`);
@@ -263,7 +274,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       },
       (err) => console.error(err),
       () => {
-        console.log(`acabose, tenemos ${provDataIn.length} items`);
+        console.log(`acabose, tenemos ${provDataIn.length} items`);        
         this.trainData(provDataIn);
       }
     );
@@ -284,13 +295,15 @@ export class LoadTrainingImgsComponent implements OnInit {
   }
 
   protected trainData(dataIn: IImgLabel[]) {
+    console.log('Add data  for trani');
+    this.traindedData=dataIn;
     this.bagClassifier.addData(dataIn);
   }
 
   protected showModelsDifs(base: tf.Model, otro: tf.Model) {
     if (!base || !otro) return;
     const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); //this.deepDiffMapper.map(base, otro);
-    
+
     console.log(rDiff);
   }
 
@@ -508,10 +521,10 @@ function getClasses(classes: string[]) {
   }, {});
 }
 
-function getObjDiff(org: any, other: any, level: number, ignore: Array<string>=[]) {
-  if(level<0) return null;
+function getObjDiff(org: any, other: any, level: number, ignore: Array<string> = []) {
+  if (level < 0) return null;
   function isEmpty(obj) {
-    if(obj===null) return true;
+    if (obj === null) return true;
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) return false;
     }
@@ -539,18 +552,18 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string>=[
     return `Values changed "${val1}" != "${val2}"`;
   }
 
-  function compareArrays(arr1: Array<any>, arr2: Array<any>): Array<any> | string{
-    const l1=arr1.length;
-    const l2=arr2.length;
-    let allNulls=true;
-    if(l1===l2) {
-      if(l1===0) return null;  // Atajo para vacios
-      let f=Math.min(l1,l2,6);
-      let r=[];
-      for(let i=0; i<f; i++){
-        let r2=getObjDiff(arr1[i], arr2[i], level-1, ignore);
-        if(isEmpty(r2)) r2 = null;
-        if (r2!=null) allNulls=false;
+  function compareArrays(arr1: Array<any>, arr2: Array<any>): Array<any> | string {
+    const l1 = arr1.length;
+    const l2 = arr2.length;
+    let allNulls = true;
+    if (l1 === l2) {
+      if (l1 === 0) return null;  // Atajo para vacios
+      let f = Math.min(l1, l2, 6);
+      let r = [];
+      for (let i = 0; i < f; i++) {
+        let r2 = getObjDiff(arr1[i], arr2[i], level - 1, ignore);
+        if (isEmpty(r2)) r2 = null;
+        if (r2 != null) allNulls = false;
         r.push(r2);
       }
       if (!allNulls) return r;
@@ -562,7 +575,7 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string>=[
   const rest = {};
   for (const key in org) {
     if (org.hasOwnProperty(key)) {
-      if(ignore.indexOf(key)>=0) continue;
+      if (ignore.indexOf(key) >= 0) continue;
 
       const val1 = org[key];
       if (isFunction(org[key])) {
@@ -575,9 +588,9 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string>=[
       } else { // Son objectos
         if (isArray(val1)) {
           let r2;
-          r2=compareArrays(val1,val2);
-          if(r2!=null) rest[key]=r2;
-        } else  if (isObject(val1)) {
+          r2 = compareArrays(val1, val2);
+          if (r2 != null) rest[key] = r2;
+        } else if (isObject(val1)) {
           let r2;
           if (level > 0) r2 = getObjDiff(val1, val2, level - 1, ignore);
           else r2 = null;
