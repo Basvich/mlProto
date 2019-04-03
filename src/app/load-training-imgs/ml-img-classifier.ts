@@ -2,6 +2,7 @@ import {Observable, of, from} from 'rxjs';
 import * as tf from '@tensorflow/tfjs';
 import {map} from 'rxjs/operators';
 import {oneHot, Tensor, Rank} from '@tensorflow/tfjs';
+import {TypedArray} from './types';
 
 
 const PRETRAINED_MODELS_KEYS = {
@@ -28,6 +29,11 @@ export interface IParams {
   batchSize?: number;
   epochs?: number;
 };
+
+export interface IResPredict {
+  label: string;
+  prob: number;
+}
 
 
 export class MlImgClassifier {
@@ -107,7 +113,7 @@ export class MlImgClassifier {
   public addData(imgs: IImgLabel[]) {
     console.log('MlImgClassifier.addData()');
     if (!imgs) return;
-    const labels: string[] = imgs.map((val: IImgLabel) => val.label);  // Obtenemos un array con solo los labels
+    const labels: string[] = imgs.map((val: IImgLabel) => val.label);  // Obtenemos un array con solo los labels (hay repes)
     const y = MlImgClassifier.getYvaluesFromLabels(labels);
     console.log(y.toString());
     console.log(`Tenemos YS tensor de dimensiones: ${y.shape}`);
@@ -119,6 +125,10 @@ export class MlImgClassifier {
     this.xs = x;
   }
 
+  /**
+   * 
+   * @param params 
+   */
   public train$(params: IParams = {}): Observable<tf.History> {
     if (!this.ys || !this.xs) throw new Error('incomplete training data');
     const nClasses = Object.keys(this.classes).length;
@@ -136,22 +146,38 @@ export class MlImgClassifier {
     }));
   }
 
-  public predict(img: tf.Tensor){
+
+  /**
+   * Devuelve una predicción sobre el tipo de imagen que es.
+   * @param img Imagen a analizar
+   */
+  public predict(img: tf.Tensor): IResPredict {
     if (!this.lastModel) throw new Error('No model');
-    if (!(img instanceof tf.Tensor) ) throw new Error('image is not tensor');
-    const activatedImg=this.activateImage(img);
+    if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
+    const activatedImg = this.activateImage(img);
     const predictions = this.lastModel.predict(activatedImg);
     console.log(predictions.toString());
-    const r1=(predictions as tf.Tensor).as1D().argMax();
-    console.log(r1);
-    /*const classId = (r1.data())[0];
-    const prediction = Object.entries(this.classes).reduce((obj, [ key, val, ]) => ({
-      ...obj,
-      [val]: key,
-    }), {})[classId];*/
+    const dsPred: TypedArray = (predictions as Tensor).dataSync();
+    const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
+    let iMin = {v: 0, i: 0};
 
-    
-    
+    for (let i=0; i< dsPred.length; i++){
+      if (dsPred[i]>iMin.v) iMin={v:dsPred[i], i};
+    }
+    // console.log(r1);
+    console.log(iMin);
+    /*const classId = (r1.data())[0];*/
+    const clsi = Object.entries(this.classes);
+    const clsii = clsi.find(
+      (a) =>
+        a[1] === iMin.i
+    );
+    console.log(clsii);
+    const res: IResPredict = {
+      label: clsii[0],
+      prob: iMin.v
+    };
+    return res;
   }
 
   protected init() {
