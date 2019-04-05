@@ -6,7 +6,7 @@ import {forEach} from '@angular/router/src/utils/collection';
 import {delay, mergeMap, map} from 'rxjs/operators';
 import {interceptingHandler} from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
-import {MlImgClassifier, IImgLabel} from './ml-img-classifier';
+import {MlImgClassifier, IImgLabel, IResPredict} from './ml-img-classifier';
 import MLClassifier from './index';
 import {IArgs} from './types';
 import {isArray} from 'util';
@@ -135,8 +135,9 @@ export class LoadTrainingImgsComponent implements OnInit {
   }();
 
   ngOnInit() {
+    this.testMemory('in ngOnInit()');
     this.initClasifier();
-
+    this.testMemory('ngOnInit().2');
     const args: IArgs = {
       onAddDataStart: () => console.log('onAddDataStart'),
       onAddDataComplete: () => console.log('onAddDataComplete'),
@@ -145,6 +146,7 @@ export class LoadTrainingImgsComponent implements OnInit {
 
     };
     this.mlClassifier = new MLClassifier(args);
+    this.testMemory('ngOnInit().3');
   }
 
 
@@ -174,9 +176,11 @@ export class LoadTrainingImgsComponent implements OnInit {
   }
 
   public testTrain() {
+    this.testMemory('al Empezar el train');
     const thats = this;
     this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
+        console.log('Datos del train: ');
         console.log(data);
       },
       (err) => {
@@ -187,15 +191,33 @@ export class LoadTrainingImgsComponent implements OnInit {
         thats.showModelsDifs(thats.mlClassifier.lastModel, thats.bagClassifier.lastModel);
         console.log('final de mostrar diferencias');*/
       },
-      () => console.log('done')
+      () => {
+        console.log('-----------done------------');
+        this.testMemory('al acabar de procesar imagenes:');
+      }
     );
   }
 
   /** Se vuelven a pasar las imagenes que se usaron para entrenar, sobre la red para ver que resultado dan */
   public testAcurracyTrain() {
-    let nOk = 0;
-    const i1 = this.traindedData[0];
-    this.bagClassifier.predict(i1.img);
+    let sumRes=0;
+    this.testMemory('antes de test acurracy');
+    this.traindedData.forEach(element => {
+      const i1 = element;
+      const pred: IResPredict=this.bagClassifier.predict(i1.img);
+      if(i1.label===pred.label) sumRes+=pred.prob;
+    });
+    const fiab=100*sumRes/this.traindedData.length;
+
+    console.log(fiab);
+    this.testMemory('acabado test acurracy');
+    // const i1 = this.traindedData[0];
+    // this.bagClassifier.predict(i1.img);
+  }
+
+  public testMemory(nfo: string=''){
+    const mm = tf.memory();
+    console.log(`${nfo} tensors: ${mm.numTensors} mem: ${mm.numBytes}`);
   }
 
   public async testAddDataMlClass() {
@@ -238,6 +260,7 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   /** Funcion de ejemplo para el drop de ficheros */
   public dropped(event: UploadEvent) {
+    this.testMemory('Antes de procesar imagenes');
     this.files = event.files;
     for (const droppedFile of event.files) {
       // Is it a file?
@@ -250,7 +273,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       } else {
         // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
-        console.log(droppedFile.relativePath, fileEntry);
+        console.log(droppedFile.relativePath, fileEntry);        
       }
     }
   }
@@ -260,6 +283,7 @@ export class LoadTrainingImgsComponent implements OnInit {
    * @param event - Datos con la informacion soltada
    */
   public dropped2(event: UploadEvent) {
+    this.testMemory('Antes de dropped2()');
     const files = event.files;
     let cc = 0;
     const provDataIn = [];
@@ -275,6 +299,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       (err) => console.error(err),
       () => {
         console.log(`acabose, tenemos ${provDataIn.length} items`);        
+        this.testMemory('Al acabar dropped2()');
         this.trainData(provDataIn);
       }
     );
@@ -323,7 +348,7 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
     mergeMap((val: Ifl2) => srcToImg$(val)),
     map((val: Ifl3) => {
       const prov = val.data;
-      console.log('Modificando tensor');
+      // console.log('Modificando tensor');
       val.data = loadAndProcessImage(prov);
       prov.dispose();
       return val;
@@ -380,11 +405,11 @@ function readFileSFEAsDataURL$(file: FileSystemFileEntry): Rx.Observable<string>
 }
 
 function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
-  console.log('readFileSFEAsDataURL2$');
+  // console.log('readFileSFEAsDataURL2$');
   return Rx.Observable.create((observable) => {
     const fileReader = new FileReader();
     fileReader.onload = () => {
-      console.log('cargado fichero');
+      // console.log('cargado fichero');
       const res: Ifl2 = {...fileNfo, fileReaded: fileReader.result};
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
@@ -393,7 +418,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
       observable.error(err);
     };
     fileNfo.file.file((f) => {
-      console.log(`pidiendo fichero ${f.name}`);
+      // console.log(`pidiendo fichero ${f.name}`);
       fileReader.readAsDataURL(f);
     });
   });
@@ -408,7 +433,7 @@ function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
     const img = new Image();
     img.onload = function () {
       const res: Ifl3 = {...src, img, data: tf.fromPixels(img)};
-      console.log('pasada imagen a tensor');
+      // console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();
     };
@@ -425,6 +450,7 @@ function miObsTest1$(dataIn: string[]): Rx.Observable<string> {
   return Rx.from(dataIn);
 }
 
+/** Test de un observable que hace delays de los datos */
 function miObsTest2$(dataIn: string[]): Rx.Observable<string> {
   return Rx.from(dataIn).pipe(
     delay(4000)

@@ -45,6 +45,7 @@ export class MlImgClassifier {
   constructor() {
     this.init();
   }
+  
   public pretrainedModel: tf.Model;
   /** Devuelve las dimensiones del modelo
    * @param md - Modelo del que obtiene las dimensiones
@@ -134,11 +135,11 @@ export class MlImgClassifier {
     const nClasses = Object.keys(this.classes).length;
     const model = this.getModel(this.pretrainedModel, nClasses, params);
     this.lastModel = model;
-    console.log(model.summary());
+    // console.log(model.summary());
     const batchSize = this.getBatchSize(params.batchSize, this.xs);
-    console.log(`model ${model.name}`);
-    console.log(`xs ${this.xs.shape}  `);
-    console.log(`ys ${this.ys.shape} `);
+    // console.log(`model ${model.name}`);
+    // console.log(`xs ${this.xs.shape}  `);
+    // console.log(`ys ${this.ys.shape} `);
     return from(model.fit(this.xs, this.ys, {
       ...params,
       batchSize,
@@ -156,7 +157,7 @@ export class MlImgClassifier {
     if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
     const activatedImg = this.activateImage(img);
     const predictions = this.lastModel.predict(activatedImg);
-    console.log(predictions.toString());
+    // console.log(predictions.toString());
     const dsPred: TypedArray = (predictions as Tensor).dataSync();
     const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
     let iMin = {v: 0, i: 0};
@@ -187,10 +188,12 @@ export class MlImgClassifier {
         md.predict(tf.zeros([1, ...dims, 3]));
       });
       this.pretrainedModel = md;
-      console.log(this.pretrainedModel.summary());
+      // console.log(this.pretrainedModel.summary());
       console.log('Cargado el modelo base');
     },
-      (err) => console.error(err));
+      (err) => console.error(err),
+      () => console.log('ilImgClass inited')
+    );
   }
 
   defaultLayers = ({classes}: {classes: number}) => {
@@ -223,8 +226,8 @@ export class MlImgClassifier {
 
   protected getModel(pretrainedModel: tf.Model, classes: number, params: IParams) {
     const dl = this.defaultLayers({classes});
-    console.log('MlImgClassifier.getModel() layers:');
-    console.log(dl);
+    // console.log('MlImgClassifier.getModel() layers:');
+    // console.log(dl);
     const model = tf.sequential({
       layers: dl,
     });
