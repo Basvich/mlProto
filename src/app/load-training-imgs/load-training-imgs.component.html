@@ -2,21 +2,32 @@
   <div class="col" id="learningZone">
     <div class="row">
       <div class="col">
-        <span>Ficheros de aprendizaje</span>
-        <button type="button" class="btn btn-primary" (click)="test1()" ngbTooltip="Test">
-              inicializar clasificador
-            </button>
+        <span>Ficheros de aprendizaje</span>       
       </div>
       <div class="col">
-          <button type="button" class="btn btn-secondary" (click)="test2()" ngbTooltip="Test">
-              Test a function
-          </button>
+        <button type="button" class="btn btn-secondary" (click)="test2()" ngbTooltip="Test">
+          Test a function
+        </button>
       </div>
       <div class="col">
         <button type="button" class="btn btn-primary" (click)="testTrain()" ngbTooltip="Train data">
-            train
+          train
         </button>
-    </div>
+        <button type="button" class="btn btn-primary" (click)="testAcurracyTrain()" ngbTooltip="test with self data">
+          test train acurracy
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="testMemory()" ngbTooltip="check memory use">
+          memory use
+        </button>
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-secondary" (click)="testAddDataMlClass()" ngbTooltip="ML test add data">
+          test addData ml
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="testTrainMlClass()" ngbTooltip="ML test train ">
+          test Train ml
+        </button>
+      </div>
     </div>
     <div class="row">
       <div class="col">
