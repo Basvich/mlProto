@@ -76,7 +76,7 @@ export class MlImgClassifier {
     const classLength = Object.keys(classes).length;
     return labels.reduce((data: tf.Tensor2D | undefined, label: string) => {
       const labelIndex = classes[label];
-      const y = MlImgClassifier.miOneHot(labelIndex, classLength);
+      const y = MlImgClassifier.miOneHot(labelIndex, classLength)  as tf.Tensor2D;
       return tf.tidy(() => {
         if (data === undefined) {
           return tf.keep(y);

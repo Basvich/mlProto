@@ -33,7 +33,7 @@ export const addLabels = (labels: string[], classes: IClasses): tf.Tensor2D | un
 
   return labels.reduce((data: tf.Tensor2D | undefined, label: string) => {
     const labelIndex = classes[label];
-    const y = oneHot(labelIndex, classLength);
+    const y = oneHot(labelIndex, classLength) as tf.Tensor2D;
 
     return tf.tidy(() => {
       if (data === undefined) {
