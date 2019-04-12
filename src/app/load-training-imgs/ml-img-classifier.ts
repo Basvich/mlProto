@@ -46,11 +46,11 @@ export class MlImgClassifier {
     this.init();
   }
   
-  public pretrainedModel: tf.Model;
+  public pretrainedModel: tf.LayersModel;
   /** Devuelve las dimensiones del modelo
    * @param md - Modelo del que obtiene las dimensiones
    */
-  private static getInputDims(md: tf.Model): [number, number] {
+  private static getInputDims(md: tf.LayersModel): [number, number] {
     const {
       inputLayers,
     } = md;
@@ -224,7 +224,7 @@ export class MlImgClassifier {
     return undefined;
   }
 
-  protected getModel(pretrainedModel: tf.Model, classes: number, params: IParams) {
+  protected getModel(pretrainedModel: tf.LayersModel, classes: number, params: IParams) {
     const dl = this.defaultLayers({classes});
     // console.log('MlImgClassifier.getModel() layers:');
     // console.log(dl);
@@ -245,13 +245,13 @@ export class MlImgClassifier {
    * @param [pretrainedModel=PRETRAINED_MODELS_KEYS.MOBILENET] - nombre del modelo
    * @returns  - El nombre del modelo
    */
-  protected loadPretrainedModel$(pretrainedModel: string | tf.Model = PRETRAINED_MODELS_KEYS.MOBILENET): Observable<tf.Model> {
-    if (pretrainedModel instanceof tf.Model) {
+  protected loadPretrainedModel$(pretrainedModel: string | tf.LayersModel = PRETRAINED_MODELS_KEYS.MOBILENET): Observable<tf.LayersModel> {
+    if (pretrainedModel instanceof tf.LayersModel) {
       return of(pretrainedModel);
     }
     const config = PRETRAINED_MODELS[pretrainedModel];
-    return from(tf.loadModel(config.url)).pipe(
-      map((model: tf.Model) => {
+    return from(tf.loadLayersModel(config.url)).pipe(
+      map((model: tf.LayersModel) => {
         const layer = model.getLayer(config.layer);
         return tf.model({
           inputs: [model.inputs[0]],

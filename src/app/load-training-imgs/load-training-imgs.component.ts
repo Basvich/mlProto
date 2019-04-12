@@ -325,7 +325,7 @@ export class LoadTrainingImgsComponent implements OnInit {
     this.bagClassifier.addData(dataIn);
   }
 
-  protected showModelsDifs(base: tf.Model, otro: tf.Model) {
+  protected showModelsDifs(base: tf.LayersModel, otro: tf.LayersModel) {
     if (!base || !otro) return;
     const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); //this.deepDiffMapper.map(base, otro);
 
@@ -432,7 +432,7 @@ function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
     img.onload = function () {
-      const res: Ifl3 = {...src, img, data: tf.fromPixels(img)};
+      const res: Ifl3 = {...src, img, data: tf.browser.fromPixels(img)};
       // console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();

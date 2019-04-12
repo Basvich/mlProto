@@ -27,7 +27,7 @@ import {
 class MLClassifier {
   // private pretrainedModel: typeof tf.model;
   // private pretrainedModel: any;
-  public pretrainedModel: tf.Model;
+  public pretrainedModel: tf.LayersModel;
   // private model: tf.Sequential;
   private model: any;
   private callbacks: Function[] = [];
@@ -36,7 +36,7 @@ class MLClassifier {
     classes: {},
   };
 
-  public lastModel: tf.Model;
+  public lastModel: tf.LayersModel;
 
   constructor(args: IArgs) {
     this.args = args;
