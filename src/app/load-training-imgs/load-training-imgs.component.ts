@@ -43,8 +43,9 @@ interface Ifl3 extends Ifl2 {
   styleUrls: ['./load-training-imgs.component.less']
 })
 export class LoadTrainingImgsComponent implements OnInit {
-
-  constructor() { }
+  /** Temporal para probar el mostrar estados directamente */
+  @ViewChild('myMainId') myMainId: ElementRef;
+  constructor() {}
 
   protected bagClassifier: MlImgClassifier;
   protected mlClassifier: MLClassifier;
@@ -83,14 +84,14 @@ export class LoadTrainingImgsComponent implements OnInit {
           }
 
           let value2;
-          if ('undefined' != typeof (obj2[key])) {
+          if ('undefined' !== typeof (obj2[key])) {
             value2 = obj2[key];
           }
 
           diff[key] = this.map(obj1[key], value2);
         }
         for (const key in obj2) {
-          if (this.isFunction(obj2[key]) || ('undefined' != typeof (diff[key]))) {
+          if (this.isFunction(obj2[key]) || ('undefined' !== typeof (diff[key]))) {
             continue;
           }
 
@@ -107,10 +108,10 @@ export class LoadTrainingImgsComponent implements OnInit {
         if (this.isDate(value1) && this.isDate(value2) && value1.getTime() === value2.getTime()) {
           return this.VALUE_UNCHANGED;
         }
-        if ('undefined' == typeof (value1)) {
+        if ('undefined' === typeof (value1)) {
           return this.VALUE_CREATED;
         }
-        if ('undefined' == typeof (value2)) {
+        if ('undefined' === typeof (value2)) {
           return this.VALUE_DELETED;
         }
 
@@ -145,7 +146,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       onTrainComplete: () => console.log('onTrainComplete')
 
     };
-    this.mlClassifier = new MLClassifier(args);
+    // this.mlClassifier = new MLClassifier(args);
     this.testMemory('ngOnInit().3');
   }
 
@@ -173,6 +174,40 @@ export class LoadTrainingImgsComponent implements OnInit {
     const labelIndex = classes['b'];
     const res2 = tf.oneHot([1, 2], 2);
     console.log(res2.toString());
+  }
+
+  public testInit(){
+    const thats=this;
+    const subs=this.bagClassifier.init2().subscribe(
+      ()=>{
+        console.log('algo init');
+        showInited(true);
+        subs.unsubscribe();
+      },
+      (err)=>{
+        console.error(err);
+        showInited(false);
+      },
+      ()=>{
+        console.log('complete init');
+      }
+      );
+
+    function showInited(isOk: boolean){
+      const hel=thats.myMainId.nativeElement as HTMLElement;
+      const ch=hel.ownerDocument.getElementById('sinit');
+      if (isOk){
+        thats.showInfo(ch, 'Inicializado' , 'badge badge-success');
+      }else{
+        thats.showInfo(ch, 'Error' , 'badge badge-danger');
+      }
+    }
+  }
+
+  public showInfo(hEl: HTMLElement, txt: string, cln?: string){
+    if (!hEl) return;
+    if (txt) hEl.innerText=txt;
+    if (cln) hEl.className=cln;
   }
 
   public testTrain() {
@@ -204,8 +239,8 @@ export class LoadTrainingImgsComponent implements OnInit {
     this.testMemory('antes de test acurracy');
     this.traindedData.forEach(element => {
       const i1 = element;
-      const pred: IResPredict = this.bagClassifier.predict(i1.img);
-      if (i1.label === pred.label) sumRes += pred.prob;
+      const pred: IResPredict=this.bagClassifier.predict(i1.img);
+      if (i1.label===pred.label) sumRes+=pred.prob;
     });
     const fiab = 100 * sumRes / this.traindedData.length;
 
@@ -283,6 +318,9 @@ export class LoadTrainingImgsComponent implements OnInit {
    * @param event - Datos con la informacion soltada
    */
   public dropped2(event: UploadEvent) {
+    const thats=this;    
+    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sfiles');
+    this.showInfo(ch, 'loading...');
     this.testMemory('Antes de dropped2()');
     const files = event.files;
     let cc = 0;
@@ -298,11 +336,13 @@ export class LoadTrainingImgsComponent implements OnInit {
       },
       (err) => {
         console.error(err);
+        thats.showInfo(ch, 'Error','badge badge-danger');
       },
       () => {
         console.log(`acabose, tenemos ${provDataIn.length} items`);
         this.testMemory('Al acabar dropped2()');
-        this.setTrainData(provDataIn);
+        thats.showInfo(ch, `${provDataIn.length} images`, 'badge badge-success');
+        this.trainData(provDataIn);
       }
     );
   }
@@ -329,7 +369,7 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   protected showModelsDifs(base: tf.LayersModel, otro: tf.LayersModel) {
     if (!base || !otro) return;
-    const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); //this.deepDiffMapper.map(base, otro);
+    const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); // this.deepDiffMapper.map(base, otro);
 
     console.log(rDiff);
   }
@@ -357,7 +397,7 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
     })
   );
 
-  return Rx.Observable.create(function (observer: Rx.Subscriber<string>) {
+  return Rx.Observable.create(function(observer: Rx.Subscriber<string>) {
     if (!(files) || files.length === 0) {
       observer.complete();
       return;
@@ -439,7 +479,7 @@ function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
       observable.next(res);
       observable.complete();
     };
-    img.onerror = function (err) {
+    img.onerror = function(err) {
       observable.error(err);
     };
     img.src = src.fileReaded as any;
@@ -503,7 +543,7 @@ function isEven(n) {
 
 /** Expands our Tensor and translates the integers into floats with
  *
- * @param image
+ * @param image Image in format tensor (3 matrix)
  */
 function batchImage(image: tf.Tensor): tf.Tensor {
   // Expand our tensor to have an additional dimension, whose size is 1
@@ -584,7 +624,7 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string> =
 
   function isFunction2(obj) {
     return !!(obj && obj.constructor && obj.call && obj.apply);
-  };
+  }
 
   function compareValues(val1, val2): string {
     if (val1 === val2) return null;
@@ -599,8 +639,8 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string> =
     let allNulls = true;
     if (l1 === l2) {
       if (l1 === 0) return null;  // Atajo para vacios
-      let f = Math.min(l1, l2, 6);
-      let r = [];
+      const f = Math.min(l1, l2, 6);
+      const r = [];
       for (let i = 0; i < f; i++) {
         let r2 = getObjDiff(arr1[i], arr2[i], level - 1, ignore);
         if (isEmpty(r2)) r2 = null;

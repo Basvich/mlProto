@@ -1,8 +1,61 @@
-<div class="row">
+<div class="row" #myMainId>
   <div class="col" id="learningZone">
     <div class="row">
       <div class="col">
-        <span>Ficheros de aprendizaje</span>       
+        <span>1) Inicializacion: </span>
+        <button type="button" class="btn btn-secondary" (click)="testInit()" ngbTooltip="Test">
+          Test init
+        </button>
+      </div>
+      <div class="col-2">
+        <span id="sinit" class="badge badge-secondary">Initializing</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2">
+        <span>2) Ficheros aprendizaje</span>
+      </div>
+      <div class="col">
+        <file-drop headertext="Drop files here" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+          <span>Ficheros aprendizaje </span>
+        </file-drop>
+      </div>
+      <div class="col-2">
+        <span id="sfiles" class="badge badge-secondary">Pending</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2">
+        <span>3) Train</span>
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-primary" (click)="testTrain()" ngbTooltip="Train data">
+          train
+        </button>
+      </div>
+      <div class="col-2">
+        <span class="badge badge-secondary">Pending</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2">
+        <span>4) Acurracy</span>
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-primary" (click)="testAcurracyTrain()" ngbTooltip="test with self data">
+          test train acurracy
+        </button>
+      </div>
+      <div class="col-2">
+        <span class="badge badge-secondary">Pending</span>
+      </div>
+    </div>
+    <div class="row">
+      <span>loading: </span>
+    </div>
+    <div class="row">
+      <div class="col">
+        <span>Ficheros de aprendizaje</span>
       </div>
       <div class="col">
         <button type="button" class="btn btn-secondary" (click)="test2()" ngbTooltip="Test">
@@ -10,12 +63,8 @@
         </button>
       </div>
       <div class="col">
-        <button type="button" class="btn btn-primary" (click)="testTrain()" ngbTooltip="Train data">
-          train
-        </button>
-        <button type="button" class="btn btn-primary" (click)="testAcurracyTrain()" ngbTooltip="test with self data">
-          test train acurracy
-        </button>
+
+
         <button type="button" class="btn btn-secondary" (click)="testMemory()" ngbTooltip="check memory use">
           memory use
         </button>
@@ -29,32 +78,6 @@
         </button>
       </div>
     </div>
-    <div class="row">
-      <div class="col">
-        <file-drop headertext="Drop files here" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
-          <span>optional content (don't set headertext then)</span>
-        </file-drop>
-      </div>
-      <div class="col">
-        <img #miImg crossorigin="anonymous" id="miTestImg" width="100">
-        <span>{{testImgLabel}}</span>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="upload-table">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-          </tr>
-        </thead>
-        <tbody class="upload-name-style">
-          <tr *ngFor="let item of files; let i=index">
-            <td><strong>{{ item.relativePath }}</strong></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+
   </div>
 </div>
