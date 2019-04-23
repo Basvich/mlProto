@@ -1,15 +1,15 @@
-import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
-import {UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule} from 'ngx-file-drop';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule } from 'ngx-file-drop';
 import * as Rx from 'rxjs';
-import {any, Tensor3D, Tensor} from '@tensorflow/tfjs';
-import {forEach} from '@angular/router/src/utils/collection';
-import {delay, mergeMap, map} from 'rxjs/operators';
-import {interceptingHandler} from '@angular/common/http/src/module';
+import { any, Tensor3D, Tensor } from '@tensorflow/tfjs';
+import { forEach } from '@angular/router/src/utils/collection';
+import { delay, mergeMap, map } from 'rxjs/operators';
+import { interceptingHandler } from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
-import {MlImgClassifier, IImgLabel, IResPredict} from './ml-img-classifier';
+import { MlImgClassifier, IImgLabel, IResPredict } from './ml-img-classifier';
 import MLClassifier from './index';
-import {IArgs} from './types';
-import {isArray} from 'util';
+import { IArgs } from './types';
+import { isArray } from 'util';
 // import { Image } from 'p5';
 
 
@@ -44,7 +44,7 @@ interface Ifl3 extends Ifl2 {
 })
 export class LoadTrainingImgsComponent implements OnInit {
 
-  constructor() {}
+  constructor() { }
 
   protected bagClassifier: MlImgClassifier;
   protected mlClassifier: MLClassifier;
@@ -200,14 +200,14 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   /** Se vuelven a pasar las imagenes que se usaron para entrenar, sobre la red para ver que resultado dan */
   public testAcurracyTrain() {
-    let sumRes=0;
+    let sumRes = 0;
     this.testMemory('antes de test acurracy');
     this.traindedData.forEach(element => {
       const i1 = element;
-      const pred: IResPredict=this.bagClassifier.predict(i1.img);
-      if(i1.label===pred.label) sumRes+=pred.prob;
+      const pred: IResPredict = this.bagClassifier.predict(i1.img);
+      if (i1.label === pred.label) sumRes += pred.prob;
     });
-    const fiab=100*sumRes/this.traindedData.length;
+    const fiab = 100 * sumRes / this.traindedData.length;
 
     console.log(fiab);
     this.testMemory('acabado test acurracy');
@@ -215,7 +215,7 @@ export class LoadTrainingImgsComponent implements OnInit {
     // this.bagClassifier.predict(i1.img);
   }
 
-  public testMemory(nfo: string=''){
+  public testMemory(nfo: string = '') {
     const mm = tf.memory();
     console.log(`${nfo} tensors: ${mm.numTensors} mem: ${mm.numBytes}`);
   }
@@ -273,7 +273,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       } else {
         // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
-        console.log(droppedFile.relativePath, fileEntry);        
+        console.log(droppedFile.relativePath, fileEntry);
       }
     }
   }
@@ -292,15 +292,17 @@ export class LoadTrainingImgsComponent implements OnInit {
       (val: Ifl3) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
-        console.log(`img count ${cc++} label: '${val.label}'`);
-        provDataIn.push({label: val.label, img: val.data});
-        this.provData2.push({label: val.label, img: val.img});
+        console.log(`img count ${cc++} label: '${val.label}' name:'${val.file.name}'`);
+        provDataIn.push({ label: val.label, img: val.data });
+        this.provData2.push({ label: val.label, img: val.img });
       },
-      (err) => console.error(err),
+      (err) => {
+        console.error(err);
+      },
       () => {
-        console.log(`acabose, tenemos ${provDataIn.length} items`);        
+        console.log(`acabose, tenemos ${provDataIn.length} items`);
         this.testMemory('Al acabar dropped2()');
-        this.trainData(provDataIn);
+        this.setTrainData(provDataIn);
       }
     );
   }
@@ -319,9 +321,9 @@ export class LoadTrainingImgsComponent implements OnInit {
     this.bagClassifier = new MlImgClassifier();
   }
 
-  protected trainData(dataIn: IImgLabel[]) {
-    console.log('Add data  for trani');
-    this.traindedData=dataIn;
+  protected setTrainData(dataIn: IImgLabel[]) {
+    console.log('setTrainData() Add data  for trani');
+    this.traindedData = dataIn;
     this.bagClassifier.addData(dataIn);
   }
 
@@ -342,7 +344,7 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
   if (!files) return;
   const files2 = files.filter(file => file.fileEntry.isFile);
   console.log(`Hay ${files2.length} imagenes`);
-  const files3: Ifl[] = files2.map((file) => ({file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath)}));
+  const files3: Ifl[] = files2.map((file) => ({ file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath) }));
   return Rx.from(files3).pipe(
     mergeMap((val: Ifl) => readFileSFEAsDataURL2$(val)),
     mergeMap((val: Ifl2) => srcToImg$(val)),
@@ -410,7 +412,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
     const fileReader = new FileReader();
     fileReader.onload = () => {
       // console.log('cargado fichero');
-      const res: Ifl2 = {...fileNfo, fileReaded: fileReader.result};
+      const res: Ifl2 = { ...fileNfo, fileReaded: fileReader.result };
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
     };
@@ -432,7 +434,7 @@ function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
     img.onload = function () {
-      const res: Ifl3 = {...src, img, data: tf.browser.fromPixels(img)};
+      const res: Ifl3 = { ...src, img, data: tf.browser.fromPixels(img) };
       // console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();
@@ -475,11 +477,14 @@ function getFileLabel(fullPath: string): string {
  * @returns un tenbsor recortado
  */
 function cropImage(img: tf.Tensor): tf.Tensor {
-  const width = img.shape[0];
-  const height = img.shape[1];
+  let width = img.shape[0];
+  let height = img.shape[1];
+  const isEvent= (n: number) => n % 2 ==0;
+  if(!isEven(width)) width--;
+  if(!isEven(height)) height--;
 
   // use the shorter side as the size to which we will crop
-  const shorterSide = Math.min(img.shape[0], img.shape[1]);
+  const shorterSide = Math.min(width, height);
 
   // calculate beginning and ending crop points
   const startingHeight = (height - shorterSide) / 2;
@@ -487,8 +492,13 @@ function cropImage(img: tf.Tensor): tf.Tensor {
   const endingHeight = startingHeight + shorterSide;
   const endingWidth = startingWidth + shorterSide;
 
+  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
   // return image data cropped to those points
   return img.slice([startingWidth, startingHeight, 0], [endingWidth, endingHeight, 3]);
+}
+
+function isEven(n) {
+  return n % 2 == 0;
 }
 
 /** Expands our Tensor and translates the integers into floats with
@@ -507,10 +517,15 @@ function batchImage(image: tf.Tensor): tf.Tensor {
  */
 function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
   return tf.tidy(() => {
-    const croppedImage: tf.Tensor3D = cropImage(image) as tf.Tensor3D;
-    const resizedImage = tf.image.resizeBilinear(croppedImage, [224, 224]); // resizeImage(croppedImage);
-    const batchedImage = batchImage(resizedImage);
-    return batchedImage;
+    try {
+      const croppedImage: tf.Tensor3D = cropImage(image) as tf.Tensor3D;
+      const resizedImage = tf.image.resizeBilinear(croppedImage, [224, 224]); // resizeImage(croppedImage);
+      const batchedImage = batchImage(resizedImage);
+      return batchedImage;
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
   });
 }
 
