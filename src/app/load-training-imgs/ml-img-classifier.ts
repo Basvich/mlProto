@@ -1,7 +1,7 @@
-import {Observable, of, from} from 'rxjs';
+import {Observable, of, from, Subject} from 'rxjs';
 import * as tf from '@tensorflow/tfjs';
 import {map} from 'rxjs/operators';
-import {oneHot, Tensor, Rank} from '@tensorflow/tfjs';
+import {oneHot, Tensor, Rank, io} from '@tensorflow/tfjs';
 import {TypedArray} from './types';
 
 
@@ -28,7 +28,7 @@ export interface IParams {
   [index: string]: any;
   batchSize?: number;
   epochs?: number;
-};
+}
 
 export interface IResPredict {
   label: string;
@@ -43,10 +43,12 @@ export class MlImgClassifier {
   public lastModel: tf.Sequential;
 
   constructor() {
-    this.init();
+    // this.init();
   }
-  
+
   public pretrainedModel: tf.LayersModel;
+
+
   /** Devuelve las dimensiones del modelo
    * @param md - Modelo del que obtiene las dimensiones
    */
@@ -109,7 +111,7 @@ export class MlImgClassifier {
 
   /** Se añade todos los datos que se van a usar para clasificar.
    * cada dato es un tensor correctamente dimensionado, que representa una imagen
-   * @param imgs 
+   * @param imgs Array de imagenes con sus etiquetas a añadir
    */
   public addData(imgs: IImgLabel[]) {
     console.log('MlImgClassifier.addData()');
@@ -127,8 +129,7 @@ export class MlImgClassifier {
   }
 
   /**
-   * 
-   * @param params 
+   * @param params Opciones
    */
   public train$(params: IParams = {}): Observable<tf.History> {
     if (!this.ys || !this.xs) throw new Error('incomplete training data');
@@ -194,6 +195,34 @@ export class MlImgClassifier {
       (err) => console.error(err),
       () => console.log('ilImgClass inited')
     );
+  }
+
+  public init2(): Subject<void>{
+    const s=new Subject<void>();
+    this.loadPretrainedModel$().subscribe((md) => {
+      const dims = MlImgClassifier.getInputDims(md);
+      tf.tidy(() => {
+        md.predict(tf.zeros([1, ...dims, 3]));
+      });
+      this.pretrainedModel = md;
+      // console.log(this.pretrainedModel.summary());
+      console.log('Cargado el modelo base');
+      // s.next();
+    },
+      (err) => {
+        console.error(err);
+        s.error(err);
+      },
+      () => {
+        console.log('ilImgClass inited');
+        s.next();
+      }
+    );
+    return s;
+  }
+
+  public save$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig){
+    return from(this.lastModel.save(handlerOrURL));
   }
 
   defaultLayers = ({classes}: {classes: number}) => {
@@ -272,7 +301,7 @@ export class MlImgClassifier {
 
 /** Convierte un array de strings en un objeto (mapa) con esas labels
  * como  propiedades del objeto, inicializadas a la posición
-*/
+ */
 function getClasses(classes: string[]) {
   return classes.reduce((labels, label) => {
     if (labels[label] !== undefined) {

@@ -43,8 +43,9 @@ interface Ifl3 extends Ifl2 {
   styleUrls: ['./load-training-imgs.component.less']
 })
 export class LoadTrainingImgsComponent implements OnInit {
-
-  constructor() { }
+  /** Temporal para probar el mostrar estados directamente */
+  @ViewChild('myMainId') myMainId: ElementRef;
+  constructor() {}
 
   protected bagClassifier: MlImgClassifier;
   protected mlClassifier: MLClassifier;
@@ -83,14 +84,14 @@ export class LoadTrainingImgsComponent implements OnInit {
           }
 
           let value2;
-          if ('undefined' != typeof (obj2[key])) {
+          if ('undefined' !== typeof (obj2[key])) {
             value2 = obj2[key];
           }
 
           diff[key] = this.map(obj1[key], value2);
         }
         for (const key in obj2) {
-          if (this.isFunction(obj2[key]) || ('undefined' != typeof (diff[key]))) {
+          if (this.isFunction(obj2[key]) || ('undefined' !== typeof (diff[key]))) {
             continue;
           }
 
@@ -107,10 +108,10 @@ export class LoadTrainingImgsComponent implements OnInit {
         if (this.isDate(value1) && this.isDate(value2) && value1.getTime() === value2.getTime()) {
           return this.VALUE_UNCHANGED;
         }
-        if ('undefined' == typeof (value1)) {
+        if ('undefined' === typeof (value1)) {
           return this.VALUE_CREATED;
         }
-        if ('undefined' == typeof (value2)) {
+        if ('undefined' === typeof (value2)) {
           return this.VALUE_DELETED;
         }
 
@@ -145,7 +146,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       onTrainComplete: () => console.log('onTrainComplete')
 
     };
-    this.mlClassifier = new MLClassifier(args);
+    // this.mlClassifier = new MLClassifier(args);
     this.testMemory('ngOnInit().3');
   }
 
@@ -175,16 +176,54 @@ export class LoadTrainingImgsComponent implements OnInit {
     console.log(res2.toString());
   }
 
+  public testInit(){
+    const thats=this;
+    const subs=this.bagClassifier.init2().subscribe(
+      ()=>{
+        console.log('algo init');
+        showInited(true);
+        subs.unsubscribe();
+      },
+      (err)=>{
+        console.error(err);
+        showInited(false);
+      },
+      ()=>{
+        console.log('complete init');
+      }
+      );
+
+    function showInited(isOk: boolean){
+      const hel=thats.myMainId.nativeElement as HTMLElement;
+      const ch=hel.ownerDocument.getElementById('sinit');
+      if (isOk){
+        thats.showInfo(ch, 'Inicializado' , 'badge badge-success');
+      }else{
+        thats.showInfo(ch, 'Error' , 'badge badge-danger');
+      }
+    }
+  }
+
+  public showInfo(hEl: HTMLElement, txt: string, cln?: string){
+    if (!hEl) return; 
+    if (txt) hEl.innerText=txt;
+    if (cln) hEl.className=cln;
+  }
+
   public testTrain() {
     this.testMemory('al Empezar el train');
-    const thats = this;
+    const thats=this;
+    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('strain');
+    this.showInfo(ch, 'Training...', 'badge badge-warning');
     this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
         console.log('Datos del train: ');
         console.log(data);
+        thats.showInfo(ch, `Ok`, 'badge badge-success');
       },
       (err) => {
         console.error(err);
+        thats.showInfo(ch, 'Error' , 'badge badge-danger');
         /*console.warn('Diferencia entre modelos preentrenados');
         thats.showModelsDifs(thats.mlClassifier.pretrainedModel, thats.bagClassifier.pretrainedModel);
         console.warn('Diferencia entre modelos');
@@ -192,6 +231,7 @@ export class LoadTrainingImgsComponent implements OnInit {
         console.log('final de mostrar diferencias');*/
       },
       () => {
+        //thats.showInfo(ch, `${provDataIn.length} images`, 'badge badge-success');
         console.log('-----------done------------');
         this.testMemory('al acabar de procesar imagenes:');
       }
@@ -201,18 +241,27 @@ export class LoadTrainingImgsComponent implements OnInit {
   /** Se vuelven a pasar las imagenes que se usaron para entrenar, sobre la red para ver que resultado dan */
   public testAcurracyTrain() {
     let sumRes = 0;
+    const thats=this;
+    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sAcurracy');
+    this.showInfo(ch, 'Testing...', 'badge badge-warning');
     this.testMemory('antes de test acurracy');
     this.traindedData.forEach(element => {
       const i1 = element;
-      const pred: IResPredict = this.bagClassifier.predict(i1.img);
-      if (i1.label === pred.label) sumRes += pred.prob;
+      const pred: IResPredict=this.bagClassifier.predict(i1.img);
+      if (i1.label===pred.label) sumRes+=pred.prob;
     });
     const fiab = 100 * sumRes / this.traindedData.length;
-
+    this.showInfo(ch, `${(fiab).toFixed(2)}`, 'badge badge-success');
     console.log(fiab);
     this.testMemory('acabado test acurracy');
     // const i1 = this.traindedData[0];
     // this.bagClassifier.predict(i1.img);
+  }
+
+  public downloadCfg(){
+     this.bagClassifier.save$('downloads://my-model-1').subscribe(
+       ()=>{console.log('algo');}
+     );
   }
 
   public testMemory(nfo: string = '') {
@@ -283,25 +332,31 @@ export class LoadTrainingImgsComponent implements OnInit {
    * @param event - Datos con la informacion soltada
    */
   public dropped2(event: UploadEvent) {
+    const thats=this;
+    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sfiles');
+    this.showInfo(ch, 'loading...', 'badge badge-warning');
     this.testMemory('Antes de dropped2()');
     const files = event.files;
     let cc = 0;
     const provDataIn = [];
     this.provData2 = [];
-    imageLabels$(files).subscribe(
+    imageLabels$(files).pipe(delay(10)).subscribe(
       (val: Ifl3) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
         console.log(`img count ${cc++} label: '${val.label}' name:'${val.file.name}'`);
+        thats.showInfo(ch, `${val.file.name}`);
         provDataIn.push({ label: val.label, img: val.data });
         this.provData2.push({ label: val.label, img: val.img });
       },
       (err) => {
         console.error(err);
+        thats.showInfo(ch, 'Error','badge badge-danger');
       },
       () => {
         console.log(`acabose, tenemos ${provDataIn.length} items`);
         this.testMemory('Al acabar dropped2()');
+        thats.showInfo(ch, `${provDataIn.length} images`, 'badge badge-success');
         this.setTrainData(provDataIn);
       }
     );
@@ -329,7 +384,7 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   protected showModelsDifs(base: tf.LayersModel, otro: tf.LayersModel) {
     if (!base || !otro) return;
-    const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); //this.deepDiffMapper.map(base, otro);
+    const rDiff = getObjDiff(base, otro, 3, ['id', 'name', 'originalName', '__proto__']); // this.deepDiffMapper.map(base, otro);
 
     console.log(rDiff);
   }
@@ -357,7 +412,7 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
     })
   );
 
-  return Rx.Observable.create(function (observer: Rx.Subscriber<string>) {
+  return Rx.Observable.create(function(observer: Rx.Subscriber<string>) {
     if (!(files) || files.length === 0) {
       observer.complete();
       return;
@@ -410,8 +465,9 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
   // console.log('readFileSFEAsDataURL2$');
   return Rx.Observable.create((observable) => {
     const fileReader = new FileReader();
+    console.log(`loading file: ${fileNfo.file.name}`);
     fileReader.onload = () => {
-      // console.log('cargado fichero');
+      console.log(`Loaded file: ${fileNfo.file.name}`);
       const res: Ifl2 = { ...fileNfo, fileReaded: fileReader.result };
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
@@ -433,13 +489,13 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
-    img.onload = function () {
+    img.onload = function() {
       const res: Ifl3 = { ...src, img, data: tf.browser.fromPixels(img) };
       // console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();
     };
-    img.onerror = function (err) {
+    img.onerror = function(err) {
       observable.error(err);
     };
     img.src = src.fileReaded as any;
@@ -492,7 +548,7 @@ function cropImage(img: tf.Tensor): tf.Tensor {
   const endingHeight = startingHeight + shorterSide;
   const endingWidth = startingWidth + shorterSide;
 
-  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
+  //  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
   // return image data cropped to those points
   return img.slice([startingWidth, startingHeight, 0], [endingWidth, endingHeight, 3]);
 }
@@ -503,7 +559,7 @@ function isEven(n) {
 
 /** Expands our Tensor and translates the integers into floats with
  *
- * @param image
+ * @param image Image in format tensor (3 matrix)
  */
 function batchImage(image: tf.Tensor): tf.Tensor {
   // Expand our tensor to have an additional dimension, whose size is 1
@@ -584,7 +640,7 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string> =
 
   function isFunction2(obj) {
     return !!(obj && obj.constructor && obj.call && obj.apply);
-  };
+  }
 
   function compareValues(val1, val2): string {
     if (val1 === val2) return null;
@@ -599,8 +655,8 @@ function getObjDiff(org: any, other: any, level: number, ignore: Array<string> =
     let allNulls = true;
     if (l1 === l2) {
       if (l1 === 0) return null;  // Atajo para vacios
-      let f = Math.min(l1, l2, 6);
-      let r = [];
+      const f = Math.min(l1, l2, 6);
+      const r = [];
       for (let i = 0; i < f; i++) {
         let r2 = getObjDiff(arr1[i], arr2[i], level - 1, ignore);
         if (isEmpty(r2)) r2 = null;
