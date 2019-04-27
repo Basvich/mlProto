@@ -1,7 +1,7 @@
 import {Observable, of, from, Subject} from 'rxjs';
 import * as tf from '@tensorflow/tfjs';
 import {map} from 'rxjs/operators';
-import {oneHot, Tensor, Rank} from '@tensorflow/tfjs';
+import {oneHot, Tensor, Rank, io} from '@tensorflow/tfjs';
 import {TypedArray} from './types';
 
 
@@ -47,6 +47,8 @@ export class MlImgClassifier {
   }
 
   public pretrainedModel: tf.LayersModel;
+
+
   /** Devuelve las dimensiones del modelo
    * @param md - Modelo del que obtiene las dimensiones
    */
@@ -217,6 +219,10 @@ export class MlImgClassifier {
       }
     );
     return s;
+  }
+
+  public save$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig){
+    return from(this.lastModel.save(handlerOrURL));
   }
 
   defaultLayers = ({classes}: {classes: number}) => {

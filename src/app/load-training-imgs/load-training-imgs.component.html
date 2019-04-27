@@ -16,8 +16,8 @@
         <span>2) Ficheros aprendizaje</span>
       </div>
       <div class="col">
-        <file-drop headertext="Drop files here" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
-          <span>Ficheros aprendizaje </span>
+        <file-drop headertext=" Arrastrar aqui las imagenes" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+          <span>-</span>
         </file-drop>
       </div>
       <div class="col-2">
@@ -34,7 +34,7 @@
         </button>
       </div>
       <div class="col-2">
-        <span class="badge badge-secondary">Pending</span>
+        <span id="strain" class="badge badge-secondary">Pending</span>
       </div>
     </div>
     <div class="row">
@@ -47,7 +47,17 @@
         </button>
       </div>
       <div class="col-2">
-        <span class="badge badge-secondary">Pending</span>
+        <span id="sAcurracy" class="badge badge-secondary">Pending</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2">
+        <span>5) donwload config</span>
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-primary" (click)="downloadCfg()" ngbTooltip="Download Data">
+          Donwload Data
+        </button>
       </div>
     </div>
     <div class="row">
@@ -63,8 +73,6 @@
         </button>
       </div>
       <div class="col">
-
-
         <button type="button" class="btn btn-secondary" (click)="testMemory()" ngbTooltip="check memory use">
           memory use
         </button>
@@ -78,6 +86,5 @@
         </button>
       </div>
     </div>
-
   </div>
 </div>

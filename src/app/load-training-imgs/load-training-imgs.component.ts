@@ -205,21 +205,25 @@ export class LoadTrainingImgsComponent implements OnInit {
   }
 
   public showInfo(hEl: HTMLElement, txt: string, cln?: string){
-    if (!hEl) return;
+    if (!hEl) return; 
     if (txt) hEl.innerText=txt;
     if (cln) hEl.className=cln;
   }
 
   public testTrain() {
     this.testMemory('al Empezar el train');
-    const thats = this;
+    const thats=this;
+    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('strain');
+    this.showInfo(ch, 'Training...', 'badge badge-warning');
     this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
         console.log('Datos del train: ');
         console.log(data);
+        thats.showInfo(ch, `Ok`, 'badge badge-success');
       },
       (err) => {
         console.error(err);
+        thats.showInfo(ch, 'Error' , 'badge badge-danger');
         /*console.warn('Diferencia entre modelos preentrenados');
         thats.showModelsDifs(thats.mlClassifier.pretrainedModel, thats.bagClassifier.pretrainedModel);
         console.warn('Diferencia entre modelos');
@@ -227,6 +231,7 @@ export class LoadTrainingImgsComponent implements OnInit {
         console.log('final de mostrar diferencias');*/
       },
       () => {
+        //thats.showInfo(ch, `${provDataIn.length} images`, 'badge badge-success');
         console.log('-----------done------------');
         this.testMemory('al acabar de procesar imagenes:');
       }
@@ -236,6 +241,9 @@ export class LoadTrainingImgsComponent implements OnInit {
   /** Se vuelven a pasar las imagenes que se usaron para entrenar, sobre la red para ver que resultado dan */
   public testAcurracyTrain() {
     let sumRes = 0;
+    const thats=this;
+    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sAcurracy');
+    this.showInfo(ch, 'Testing...', 'badge badge-warning');
     this.testMemory('antes de test acurracy');
     this.traindedData.forEach(element => {
       const i1 = element;
@@ -243,11 +251,17 @@ export class LoadTrainingImgsComponent implements OnInit {
       if (i1.label===pred.label) sumRes+=pred.prob;
     });
     const fiab = 100 * sumRes / this.traindedData.length;
-
+    this.showInfo(ch, `${(fiab).toFixed(2)}`, 'badge badge-success');
     console.log(fiab);
     this.testMemory('acabado test acurracy');
     // const i1 = this.traindedData[0];
     // this.bagClassifier.predict(i1.img);
+  }
+
+  public downloadCfg(){
+     this.bagClassifier.save$('downloads://my-model-1').subscribe(
+       ()=>{console.log('algo');}
+     );
   }
 
   public testMemory(nfo: string = '') {
@@ -318,19 +332,20 @@ export class LoadTrainingImgsComponent implements OnInit {
    * @param event - Datos con la informacion soltada
    */
   public dropped2(event: UploadEvent) {
-    const thats=this;    
+    const thats=this;
     const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sfiles');
-    this.showInfo(ch, 'loading...');
+    this.showInfo(ch, 'loading...', 'badge badge-warning');
     this.testMemory('Antes de dropped2()');
     const files = event.files;
     let cc = 0;
     const provDataIn = [];
     this.provData2 = [];
-    imageLabels$(files).subscribe(
+    imageLabels$(files).pipe(delay(10)).subscribe(
       (val: Ifl3) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
         console.log(`img count ${cc++} label: '${val.label}' name:'${val.file.name}'`);
+        thats.showInfo(ch, `${val.file.name}`);
         provDataIn.push({ label: val.label, img: val.data });
         this.provData2.push({ label: val.label, img: val.img });
       },
@@ -342,7 +357,7 @@ export class LoadTrainingImgsComponent implements OnInit {
         console.log(`acabose, tenemos ${provDataIn.length} items`);
         this.testMemory('Al acabar dropped2()');
         thats.showInfo(ch, `${provDataIn.length} images`, 'badge badge-success');
-        this.trainData(provDataIn);
+        this.setTrainData(provDataIn);
       }
     );
   }
@@ -450,8 +465,9 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
   // console.log('readFileSFEAsDataURL2$');
   return Rx.Observable.create((observable) => {
     const fileReader = new FileReader();
+    console.log(`loading file: ${fileNfo.file.name}`);
     fileReader.onload = () => {
-      // console.log('cargado fichero');
+      console.log(`Loaded file: ${fileNfo.file.name}`);
       const res: Ifl2 = { ...fileNfo, fileReaded: fileReader.result };
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
@@ -473,7 +489,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   return Rx.Observable.create((observable) => {
     const img = new Image();
-    img.onload = function () {
+    img.onload = function() {
       const res: Ifl3 = { ...src, img, data: tf.browser.fromPixels(img) };
       // console.log('pasada imagen a tensor');
       observable.next(res);
@@ -532,7 +548,7 @@ function cropImage(img: tf.Tensor): tf.Tensor {
   const endingHeight = startingHeight + shorterSide;
   const endingWidth = startingWidth + shorterSide;
 
-  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
+  //  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
   // return image data cropped to those points
   return img.slice([startingWidth, startingHeight, 0], [endingWidth, endingHeight, 3]);
 }
