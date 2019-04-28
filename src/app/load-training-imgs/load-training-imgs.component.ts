@@ -3,13 +3,14 @@ import { UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry,
 import * as Rx from 'rxjs';
 import { any, Tensor3D, Tensor } from '@tensorflow/tfjs';
 import { forEach } from '@angular/router/src/utils/collection';
-import { delay, mergeMap, map } from 'rxjs/operators';
+import { delay, mergeMap, map, retry } from 'rxjs/operators';
 import { interceptingHandler } from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
 import { MlImgClassifier, IImgLabel, IResPredict } from './ml-img-classifier';
 import MLClassifier from './index';
 import { IArgs } from './types';
 import { isArray } from 'util';
+import {func} from '@tensorflow/tfjs-data';
 // import { Image } from 'p5';
 
 
@@ -56,6 +57,8 @@ export class LoadTrainingImgsComponent implements OnInit {
   protected traindedData: ImgLabel[];
 
   public files: UploadFile[] = [];
+  /** fuente de la imagen de test */
+  public testImageUrl=null;
 
   @ViewChild('miImg') imgPreview: ElementRef;
   public testImgLabel: string;
@@ -340,7 +343,7 @@ export class LoadTrainingImgsComponent implements OnInit {
     let cc = 0;
     const provDataIn = [];
     this.provData2 = [];
-    imageLabels$(files).pipe(delay(10)).subscribe(
+    imageLabels$(files).subscribe(
       (val: Ifl3) => {
         // console.log(val);
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
@@ -360,6 +363,44 @@ export class LoadTrainingImgsComponent implements OnInit {
         this.setTrainData(provDataIn);
       }
     );
+  }
+
+  /** Respuesta al evento de soltar una imagen para probar
+   * 
+   * @param event - Datos de los ficheros soltados
+   */
+  public dropped3(event: UploadEvent){
+    const thats=this;
+    const ch=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
+    this.showInfo(ch, 'Analizing', 'badge badge-warning');
+    const files: UploadFile[] = event.files;
+    let files2 = files.filter(file => file.fileEntry.isFile);
+    if (files2.length<1) return;
+    files2=files2.slice(0,1);
+    imageLabels$(files2).subscribe(
+      (val: Ifl3) => {
+        //thats.testImageUrl=val.img;
+        const cimg=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('idImgTest') as HTMLImageElement;
+        cimg.src=val.img.src;
+        thats.testImg(val);
+      }
+    );
+  }
+
+  public testImg({label, data=null}){
+    if (!data) return;
+    this.testMemory('testImg() before testImg ');
+    const pred: IResPredict=this.bagClassifier.predict2(data);
+    console.log(pred);
+    this.testMemory('testImg() after testImg ');
+    data.dispose();
+    this.testMemory('testImg() after testImg 2');
+    const ch=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
+    let cl='badge badge-warning';
+    const prob=pred.prob*100;
+    if (prob>70) cl='badge badge-success';
+    if (prob<40) cl='badge badge-danger';
+    this.showInfo(ch, `${pred.label} ${prob.toFixed(2)}%`, 'badge badge-warning');
   }
 
   public fileOver(event) {
@@ -397,6 +438,7 @@ export class LoadTrainingImgsComponent implements OnInit {
  */
 function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
   if (!files) return;
+  const thats=this;
   const files2 = files.filter(file => file.fileEntry.isFile);
   console.log(`Hay ${files2.length} imagenes`);
   const files3: Ifl[] = files2.map((file) => ({ file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath) }));
@@ -405,29 +447,14 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
     mergeMap((val: Ifl2) => srcToImg$(val)),
     map((val: Ifl3) => {
       const prov = val.data;
+      console.log(`tensores en imageLabels().1: ${tf.memory().numTensors}`);
       // console.log('Modificando tensor');
       val.data = loadAndProcessImage(prov);
       prov.dispose();
+      console.log(`tensores en imageLabels().2: ${tf.memory().numTensors}`);
       return val;
     })
   );
-
-  return Rx.Observable.create(function(observer: Rx.Subscriber<string>) {
-    if (!(files) || files.length === 0) {
-      observer.complete();
-      return;
-    }
-    for (const file of files) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-
-      };
-    }
-
-    observer.next('Hello');
-    observer.next('World');
-    observer.complete();
-  });
 }
 
 function readFileAsDataURL$(file: any): Rx.Observable<string> {
@@ -487,6 +514,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
  * @param src La fuente de una imagen
  */
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
+  console.log(`tensores en srcToImg$().1: ${tf.memory().numTensors}`);
   return Rx.Observable.create((observable) => {
     const img = new Image();
     img.onload = function() {
@@ -535,16 +563,16 @@ function getFileLabel(fullPath: string): string {
 function cropImage(img: tf.Tensor): tf.Tensor {
   let width = img.shape[0];
   let height = img.shape[1];
-  const isEvent= (n: number) => n % 2 ==0;
+  const isEvent= (n: number) => n % 2 === 0;
   if(!isEven(width)) width--;
   if(!isEven(height)) height--;
 
   // use the shorter side as the size to which we will crop
   const shorterSide = Math.min(width, height);
-
+  
   // calculate beginning and ending crop points
   const startingHeight = (height - shorterSide) / 2;
-  const startingWidth = (width - shorterSide) / 2;
+  const startingWidth = (width - shorterSide) / 2;  // const startingWidth = Math.floor((width - shorterSide) / 2);
   const endingHeight = startingHeight + shorterSide;
   const endingWidth = startingWidth + shorterSide;
 
@@ -572,7 +600,8 @@ function batchImage(image: tf.Tensor): tf.Tensor {
  * @param image - tensor formado a partir de una imagen
  */
 function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
-  return tf.tidy(() => {
+  console.log(`loadAndProcessImage init: ${tf.memory().numTensors} tensors`);
+  const res= tf.tidy(() => {
     try {
       const croppedImage: tf.Tensor3D = cropImage(image) as tf.Tensor3D;
       const resizedImage = tf.image.resizeBilinear(croppedImage, [224, 224]); // resizeImage(croppedImage);
@@ -583,6 +612,8 @@ function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
     }
     return null;
   });
+  console.log(`loadAndProcessImage end: ${tf.memory().numTensors} tensors`);
+  return res;
 }
 
 function sendMessage(message: string, cb: (err: any, res: any) => void) {

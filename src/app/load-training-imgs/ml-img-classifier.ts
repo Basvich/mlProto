@@ -78,7 +78,7 @@ export class MlImgClassifier {
     const classLength = Object.keys(classes).length;
     return labels.reduce((data: tf.Tensor2D | undefined, label: string) => {
       const labelIndex = classes[label];
-      const y = MlImgClassifier.miOneHot(labelIndex, classLength)  as tf.Tensor2D;
+      const y = MlImgClassifier.miOneHot(labelIndex, classLength) as tf.Tensor2D;
       return tf.tidy(() => {
         if (data === undefined) {
           return tf.keep(y);
@@ -156,25 +156,57 @@ export class MlImgClassifier {
   public predict(img: tf.Tensor): IResPredict {
     if (!this.lastModel) throw new Error('No model');
     if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
-    const activatedImg = this.activateImage(img);
-    const predictions = this.lastModel.predict(activatedImg);
+    const predictions = tf.tidy(() => {
+      const activatedImg = this.activateImage(img);
+      const r=this.lastModel.predict(activatedImg);
+      activatedImg.dispose();
+      return r;
+    });
     // console.log(predictions.toString());
     const dsPred: TypedArray = (predictions as Tensor).dataSync();
     const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
     let iMin = {v: 0, i: 0};
 
-    for (let i=0; i< dsPred.length; i++){
-      if (dsPred[i]>iMin.v) iMin={v:dsPred[i], i};
+    for (let i = 0; i < dsPred.length; i++) {
+      if (dsPred[i] > iMin.v) iMin = {v: dsPred[i], i};
     }
     // console.log(r1);
-    console.log(iMin);
+    // console.log(iMin);
     /*const classId = (r1.data())[0];*/
     const clsi = Object.entries(this.classes);
     const clsii = clsi.find(
       (a) =>
         a[1] === iMin.i
     );
-    console.log(clsii);
+    // console.log(clsii);
+    const res: IResPredict = {
+      label: clsii[0],
+      prob: iMin.v
+    };
+    return res;
+  }
+
+  public predict2(img: tf.Tensor): IResPredict {
+    if (!this.lastModel) throw new Error('No model');
+    if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
+    const predictions=this.lastModel.predict(img);
+    // console.log(predictions.toString());
+    const dsPred: TypedArray = (predictions as Tensor).dataSync();
+    const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
+    let iMin = {v: 0, i: 0};
+
+    for (let i = 0; i < dsPred.length; i++) {
+      if (dsPred[i] > iMin.v) iMin = {v: dsPred[i], i};
+    }
+    // console.log(r1);
+    // console.log(iMin);
+    /*const classId = (r1.data())[0];*/
+    const clsi = Object.entries(this.classes);
+    const clsii = clsi.find(
+      (a) =>
+        a[1] === iMin.i
+    );
+    // console.log(clsii);
     const res: IResPredict = {
       label: clsii[0],
       prob: iMin.v
@@ -197,8 +229,8 @@ export class MlImgClassifier {
     );
   }
 
-  public init2(): Subject<void>{
-    const s=new Subject<void>();
+  public init2(): Subject<void> {
+    const s = new Subject<void>();
     this.loadPretrainedModel$().subscribe((md) => {
       const dims = MlImgClassifier.getInputDims(md);
       tf.tidy(() => {
@@ -221,7 +253,7 @@ export class MlImgClassifier {
     return s;
   }
 
-  public save$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig){
+  public save$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig) {
     return from(this.lastModel.save(handlerOrURL));
   }
 

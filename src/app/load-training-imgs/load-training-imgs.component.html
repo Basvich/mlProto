@@ -52,6 +52,21 @@
     </div>
     <div class="row">
       <div class="col-2">
+        <span>test single image</span>
+      </div>
+      <div class="col">
+        <file-drop headertext=" Arrastrar aqui una imagen" (onFileDrop)="dropped3($event)" >          
+        </file-drop>
+      </div>
+      <div class="col">
+        <img id="idImgTest"/>
+      </div>
+      <div class="col-2">
+        <span id="sTestFile" class="badge badge-secondary">Pending</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2">
         <span>5) donwload config</span>
       </div>
       <div class="col">
