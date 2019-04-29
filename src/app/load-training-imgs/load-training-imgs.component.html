@@ -2,7 +2,7 @@
   <div class="col" id="learningZone">
     <div class="row">
       <div class="col">
-        <span>1) Inicializacion: </span>
+        <span class="badge badge-info">1</span><span>Inicializacion: </span>
         <button type="button" class="btn btn-secondary" (click)="testInit()" ngbTooltip="Test">
           Test init
         </button>
@@ -13,7 +13,7 @@
     </div>
     <div class="row">
       <div class="col-2">
-        <span>2) Ficheros aprendizaje</span>
+        <span class="badge badge-info">2</span><span>Ficheros aprendizaje</span>
       </div>
       <div class="col">
         <file-drop headertext=" Arrastrar aqui las imagenes" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
@@ -26,7 +26,7 @@
     </div>
     <div class="row">
       <div class="col-2">
-        <span>3) Train</span>
+        <span class="badge badge-info">3</span><span> Train</span>
       </div>
       <div class="col">
         <button type="button" class="btn btn-primary" (click)="testTrain()" ngbTooltip="Train data">
@@ -39,7 +39,7 @@
     </div>
     <div class="row">
       <div class="col-2">
-        <span>4) Acurracy</span>
+        <span class="badge badge-info">2</span><span>Acurracy</span>
       </div>
       <div class="col">
         <button type="button" class="btn btn-primary" (click)="testAcurracyTrain()" ngbTooltip="test with self data">
@@ -67,7 +67,7 @@
     </div>
     <div class="row">
       <div class="col-2">
-        <span>5) donwload config</span>
+        <span class="badge badge-info">5</span><span> donwload config</span>
       </div>
       <div class="col">
         <button type="button" class="btn btn-primary" (click)="downloadCfg()" ngbTooltip="Download Data">

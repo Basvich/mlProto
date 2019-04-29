@@ -128,6 +128,18 @@ export class MlImgClassifier {
     this.xs = x;
   }
 
+  /** Libera la memoria ocupada por los datos de entrada */
+  public freeData(){
+    if (this.ys){
+      this.ys.dispose();
+      this.ys=null;
+    }
+    if (this.xs){
+      this.xs.dispose();
+      this.xs=null;
+    }
+  }
+
   /**
    * @param params Opciones
    */
@@ -163,13 +175,17 @@ export class MlImgClassifier {
       return r;
     });
     // console.log(predictions.toString());
+    console.log(`predict().1: ${tf.memory().numTensors}`);
     const dsPred: TypedArray = (predictions as Tensor).dataSync();
-    const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
+    // FIXME: as1D crea un tensor que hay que elimnar
+    const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor 
     let iMin = {v: 0, i: 0};
 
     for (let i = 0; i < dsPred.length; i++) {
       if (dsPred[i] > iMin.v) iMin = {v: dsPred[i], i};
     }
+    (predictions as tf.Tensor).dispose(); // el resultado es un tensor
+    console.log(`predict().2: ${tf.memory().numTensors}`);
     // console.log(r1);
     // console.log(iMin);
     /*const classId = (r1.data())[0];*/
@@ -217,6 +233,7 @@ export class MlImgClassifier {
   protected init() {
     this.loadPretrainedModel$().subscribe((md) => {
       const dims = MlImgClassifier.getInputDims(md);
+      console.log(`init() dims:${dims}`);
       tf.tidy(() => {
         md.predict(tf.zeros([1, ...dims, 3]));
       });
@@ -324,6 +341,7 @@ export class MlImgClassifier {
 
   /** Gran icognita de momento saber para que hay que hacer esto */
   protected activateImage(processedImage: Tensor): any {
+    // const pred=processedImage;
     // TODO: averiguar para que sirve
     const pred = this.pretrainedModel.predict(processedImage);
     return pred;
