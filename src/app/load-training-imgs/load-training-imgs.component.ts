@@ -247,7 +247,10 @@ export class LoadTrainingImgsComponent implements OnInit {
     const thats=this;
     const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sAcurracy');
     this.showInfo(ch, 'Testing...', 'badge badge-warning');
-    this.testMemory('antes de test acurracy');
+    this.testMemory('testAcurracyTrain() antes de test acurracy');
+    // Prueba a liberar la memoria
+    this.bagClassifier.freeData();
+    this.testMemory('testAcurracyTrain() despues freeData()');
     this.traindedData.forEach(element => {
       const i1 = element;
       const pred: IResPredict=this.bagClassifier.predict(i1.img);
@@ -390,9 +393,9 @@ export class LoadTrainingImgsComponent implements OnInit {
   public testImg({label, data=null}){
     if (!data) return;
     this.testMemory('testImg() before testImg ');
-    const pred: IResPredict=this.bagClassifier.predict2(data);
+    const pred: IResPredict=this.bagClassifier.predict(data);
     console.log(pred);
-    this.testMemory('testImg() after testImg ');
+    // this.testMemory('testImg() after testImg ');
     data.dispose();
     this.testMemory('testImg() after testImg 2');
     const ch=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
@@ -514,7 +517,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
  * @param src La fuente de una imagen
  */
 function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
-  console.log(`tensores en srcToImg$().1: ${tf.memory().numTensors}`);
+  console.log(`tensores en srcToImg$().1: ${tf.memory().numTensors} creando tensor desde imagen`);
   return Rx.Observable.create((observable) => {
     const img = new Image();
     img.onload = function() {
@@ -600,7 +603,7 @@ function batchImage(image: tf.Tensor): tf.Tensor {
  * @param image - tensor formado a partir de una imagen
  */
 function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
-  console.log(`loadAndProcessImage init: ${tf.memory().numTensors} tensors`);
+  console.log(`loadAndProcessImage init: ${tf.memory().numTensors} tensors. Creamos uno nuevo modificado`);
   const res= tf.tidy(() => {
     try {
       const croppedImage: tf.Tensor3D = cropImage(image) as tf.Tensor3D;
