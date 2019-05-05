@@ -36,16 +36,21 @@ export interface IResPredict {
 }
 
 
+/** Clase que encapsula unas cuantas funcionalidades para facilitar el uso de redes para clasificar imagenes */
 export class MlImgClassifier {
   xs: tf.Tensor;
   ys: tf.Tensor;
+  /** clase que encapsula las etiquetas */
   classes: any;
+  labelMap=new Map<number, string>();
+  
   public lastModel: tf.Sequential;
 
   constructor() {
     // this.init();
   }
 
+  /** Red preentrenada generica que sirve para clasificar imagenes */
   public pretrainedModel: tf.LayersModel;
 
 
@@ -129,14 +134,14 @@ export class MlImgClassifier {
   }
 
   /** Libera la memoria ocupada por los datos de entrada */
-  public freeData(){
-    if (this.ys){
+  public freeData() {
+    if (this.ys) {
       this.ys.dispose();
-      this.ys=null;
+      this.ys = null;
     }
-    if (this.xs){
+    if (this.xs) {
       this.xs.dispose();
-      this.xs=null;
+      this.xs = null;
     }
   }
 
@@ -170,13 +175,13 @@ export class MlImgClassifier {
     if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
     const predictions = tf.tidy(() => {
       const activatedImg = this.activateImage(img);
-      const r=this.lastModel.predict(activatedImg);
+      const r = this.lastModel.predict(activatedImg);
       activatedImg.dispose();
       return r;
     });
     // console.log(predictions.toString());
     console.log(`predict().1: ${tf.memory().numTensors}`);
-    const dsPred: TypedArray = (predictions as Tensor).dataSync();  
+    const dsPred: TypedArray = (predictions as Tensor).dataSync();
     // const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
     let iMin = {v: 0, i: 0};
 
@@ -204,7 +209,7 @@ export class MlImgClassifier {
   public predict2(img: tf.Tensor): IResPredict {
     if (!this.lastModel) throw new Error('No model');
     if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
-    const predictions=this.lastModel.predict(img);
+    const predictions = this.lastModel.predict(img);
     // console.log(predictions.toString());
     const dsPred: TypedArray = (predictions as Tensor).dataSync();
     const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
@@ -271,6 +276,23 @@ export class MlImgClassifier {
 
   public save$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig) {
     return from(this.lastModel.save(handlerOrURL));
+  }
+
+  public load$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig) {
+    const thats = this;
+    return from(tf.loadLayersModel(handlerOrURL)).pipe(
+      map((mod) => {
+        console.log('cargado modelo');
+        if (thats.lastModel) {
+          thats.lastModel.dispose();
+        }
+        thats.lastModel = mod as tf.Sequential;
+      })
+    );
+  }
+
+  public load() {
+    //this.lastModel.loadWeights()
   }
 
   defaultLayers = ({classes}: {classes: number}) => {

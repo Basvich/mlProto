@@ -39,7 +39,7 @@
     </div>
     <div class="row">
       <div class="col-2">
-        <span class="badge badge-info">2</span><span>Acurracy</span>
+        <span class="badge badge-info">4</span><span>Acurracy</span>
       </div>
       <div class="col">
         <button type="button" class="btn btn-primary" (click)="testAcurracyTrain()" ngbTooltip="test with self data">
@@ -55,11 +55,11 @@
         <span>test single image</span>
       </div>
       <div class="col">
-        <file-drop headertext=" Arrastrar aqui una imagen" (onFileDrop)="dropped3($event)" >          
+        <file-drop headertext=" Arrastrar aqui una imagen" (onFileDrop)="dropped3($event)">
         </file-drop>
       </div>
       <div class="col">
-        <img id="idImgTest"/>
+        <img id="idImgTest" />
       </div>
       <div class="col-2">
         <span id="sTestFile" class="badge badge-secondary">Pending</span>
@@ -69,9 +69,27 @@
       <div class="col-2">
         <span class="badge badge-info">5</span><span> donwload config</span>
       </div>
+      <div class="col-2">
+        <div class="input-group  input-group-sm">
+          <div class="input-group-prepend ">
+            <span class="input-group-text" id="basic-addon1">Nombre</span>
+          </div>
+          <input type="text" class="form-control" placeholder="nombre" [(ngModel)]="fileName" />
+        </div>        
+      </div>
       <div class="col">
         <button type="button" class="btn btn-primary" (click)="downloadCfg()" ngbTooltip="Download Data">
           Donwload Data
+        </button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-2">
+        <span class="badge badge-info">5</span><span> load config</span>
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-primary" (click)="loadCfg()" ngbTooltip="load Data">
+          Load Data
         </button>
       </div>
     </div>

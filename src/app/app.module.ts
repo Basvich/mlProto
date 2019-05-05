@@ -1,6 +1,7 @@
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms'; // Permite los ngBinding en los input
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -20,7 +21,8 @@ import { LoadTrainingImgsComponent } from './load-training-imgs/load-training-im
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    FileDropModule
+    FileDropModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

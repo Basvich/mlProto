@@ -1,15 +1,15 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule } from 'ngx-file-drop';
+import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
+import {UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule} from 'ngx-file-drop';
 import * as Rx from 'rxjs';
-import { any, Tensor3D, Tensor } from '@tensorflow/tfjs';
-import { forEach } from '@angular/router/src/utils/collection';
-import { delay, mergeMap, map, retry } from 'rxjs/operators';
-import { interceptingHandler } from '@angular/common/http/src/module';
+import {any, Tensor3D, Tensor} from '@tensorflow/tfjs';
+import {forEach} from '@angular/router/src/utils/collection';
+import {delay, mergeMap, map, retry} from 'rxjs/operators';
+import {interceptingHandler} from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
-import { MlImgClassifier, IImgLabel, IResPredict } from './ml-img-classifier';
+import {MlImgClassifier, IImgLabel, IResPredict} from './ml-img-classifier';
 import MLClassifier from './index';
-import { IArgs } from './types';
-import { isArray } from 'util';
+import {IArgs} from './types';
+import {isArray} from 'util';
 import {func} from '@tensorflow/tfjs-data';
 // import { Image } from 'p5';
 
@@ -58,7 +58,9 @@ export class LoadTrainingImgsComponent implements OnInit {
 
   public files: UploadFile[] = [];
   /** fuente de la imagen de test */
-  public testImageUrl=null;
+  public testImageUrl = null;
+
+  public fileName = 'miNet';
 
   @ViewChild('miImg') imgPreview: ElementRef;
   public testImgLabel: string;
@@ -179,44 +181,44 @@ export class LoadTrainingImgsComponent implements OnInit {
     console.log(res2.toString());
   }
 
-  public testInit(){
-    const thats=this;
-    const subs=this.bagClassifier.init2().subscribe(
-      ()=>{
+  public testInit() {
+    const thats = this;
+    const subs = this.bagClassifier.init2().subscribe(
+      () => {
         console.log('algo init');
         showInited(true);
         subs.unsubscribe();
       },
-      (err)=>{
+      (err) => {
         console.error(err);
         showInited(false);
       },
-      ()=>{
+      () => {
         console.log('complete init');
       }
-      );
+    );
 
-    function showInited(isOk: boolean){
-      const hel=thats.myMainId.nativeElement as HTMLElement;
-      const ch=hel.ownerDocument.getElementById('sinit');
-      if (isOk){
-        thats.showInfo(ch, 'Inicializado' , 'badge badge-success');
-      }else{
-        thats.showInfo(ch, 'Error' , 'badge badge-danger');
+    function showInited(isOk: boolean) {
+      const hel = thats.myMainId.nativeElement as HTMLElement;
+      const ch = hel.ownerDocument.getElementById('sinit');
+      if (isOk) {
+        thats.showInfo(ch, 'Inicializado', 'badge badge-success');
+      } else {
+        thats.showInfo(ch, 'Error', 'badge badge-danger');
       }
     }
   }
 
-  public showInfo(hEl: HTMLElement, txt: string, cln?: string){
-    if (!hEl) return; 
-    if (txt) hEl.innerText=txt;
-    if (cln) hEl.className=cln;
+  public showInfo(hEl: HTMLElement, txt: string, cln?: string) {
+    if (!hEl) return;
+    if (txt) hEl.innerText = txt;
+    if (cln) hEl.className = cln;
   }
 
   public testTrain() {
     this.testMemory('al Empezar el train');
-    const thats=this;
-    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('strain');
+    const thats = this;
+    const ch = (thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('strain');
     this.showInfo(ch, 'Training...', 'badge badge-warning');
     this.bagClassifier.train$().subscribe(
       (data: tf.History) => {
@@ -226,7 +228,7 @@ export class LoadTrainingImgsComponent implements OnInit {
       },
       (err) => {
         console.error(err);
-        thats.showInfo(ch, 'Error' , 'badge badge-danger');
+        thats.showInfo(ch, 'Error', 'badge badge-danger');
         /*console.warn('Diferencia entre modelos preentrenados');
         thats.showModelsDifs(thats.mlClassifier.pretrainedModel, thats.bagClassifier.pretrainedModel);
         console.warn('Diferencia entre modelos');
@@ -244,8 +246,8 @@ export class LoadTrainingImgsComponent implements OnInit {
   /** Se vuelven a pasar las imagenes que se usaron para entrenar, sobre la red para ver que resultado dan */
   public testAcurracyTrain() {
     let sumRes = 0;
-    const thats=this;
-    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sAcurracy');
+    const thats = this;
+    const ch = (thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sAcurracy');
     this.showInfo(ch, 'Testing...', 'badge badge-warning');
     this.testMemory('testAcurracyTrain() antes de test acurracy');
     // Prueba a liberar la memoria
@@ -253,8 +255,8 @@ export class LoadTrainingImgsComponent implements OnInit {
     this.testMemory('testAcurracyTrain() despues freeData()');
     this.traindedData.forEach(element => {
       const i1 = element;
-      const pred: IResPredict=this.bagClassifier.predict(i1.img);
-      if (i1.label===pred.label) sumRes+=pred.prob;
+      const pred: IResPredict = this.bagClassifier.predict(i1.img);
+      if (i1.label === pred.label) sumRes += pred.prob;
     });
     const fiab = 100 * sumRes / this.traindedData.length;
     this.showInfo(ch, `${(fiab).toFixed(2)}`, 'badge badge-success');
@@ -264,10 +266,22 @@ export class LoadTrainingImgsComponent implements OnInit {
     // this.bagClassifier.predict(i1.img);
   }
 
-  public downloadCfg(){
-     this.bagClassifier.save$('downloads://my-model-1').subscribe(
-       ()=>{console.log('algo');}
-     );
+  public downloadCfg() {
+    const fn = this.fileName;
+    /* this.bagClassifier.save$(`downloads://${fn}`).subscribe(
+      () => {console.log('algo');}
+    ); */
+    this.bagClassifier.save$(`indexeddb://${fn}`).subscribe(
+      () => {console.log('grabado');}
+    );
+  }
+
+  public loadCfg(){
+    const fn = this.fileName;
+    this.bagClassifier.load$(`indexeddb://${fn}`).subscribe(
+      () => {console.log('Cargado');},
+      (err) => console.error(err)
+    );
   }
 
   public testMemory(nfo: string = '') {
@@ -338,8 +352,8 @@ export class LoadTrainingImgsComponent implements OnInit {
    * @param event - Datos con la informacion soltada
    */
   public dropped2(event: UploadEvent) {
-    const thats=this;
-    const ch=(thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sfiles');
+    const thats = this;
+    const ch = (thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sfiles');
     this.showInfo(ch, 'loading...', 'badge badge-warning');
     this.testMemory('Antes de dropped2()');
     const files = event.files;
@@ -352,12 +366,12 @@ export class LoadTrainingImgsComponent implements OnInit {
         // (this.imgPreview.nativeElement as HTMLImageElement).src = val;
         console.log(`img count ${cc++} label: '${val.label}' name:'${val.file.name}'`);
         thats.showInfo(ch, `${val.file.name}`);
-        provDataIn.push({ label: val.label, img: val.data });
-        this.provData2.push({ label: val.label, img: val.img });
+        provDataIn.push({label: val.label, img: val.data});
+        this.provData2.push({label: val.label, img: val.img});
       },
       (err) => {
         console.error(err);
-        thats.showInfo(ch, 'Error','badge badge-danger');
+        thats.showInfo(ch, 'Error', 'badge badge-danger');
       },
       () => {
         console.log(`acabose, tenemos ${provDataIn.length} items`);
@@ -372,37 +386,37 @@ export class LoadTrainingImgsComponent implements OnInit {
    * 
    * @param event - Datos de los ficheros soltados
    */
-  public dropped3(event: UploadEvent){
-    const thats=this;
-    const ch=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
+  public dropped3(event: UploadEvent) {
+    const thats = this;
+    const ch = (this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
     this.showInfo(ch, 'Analizing', 'badge badge-warning');
     const files: UploadFile[] = event.files;
     let files2 = files.filter(file => file.fileEntry.isFile);
-    if (files2.length<1) return;
-    files2=files2.slice(0,1);
+    if (files2.length < 1) return;
+    files2 = files2.slice(0, 1);
     imageLabels$(files2).subscribe(
       (val: Ifl3) => {
-        //thats.testImageUrl=val.img;
-        const cimg=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('idImgTest') as HTMLImageElement;
-        cimg.src=val.img.src;
+        // thats.testImageUrl=val.img;
+        const cimg = (this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('idImgTest') as HTMLImageElement;
+        cimg.src = val.img.src;
         thats.testImg(val);
       }
     );
   }
 
-  public testImg({label, data=null}){
+  public testImg({label, data = null}) {
     if (!data) return;
     this.testMemory('testImg() before testImg ');
-    const pred: IResPredict=this.bagClassifier.predict(data);
+    const pred: IResPredict = this.bagClassifier.predict(data);
     console.log(pred);
     // this.testMemory('testImg() after testImg ');
     data.dispose();
     this.testMemory('testImg() after testImg 2');
-    const ch=(this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
-    let cl='badge badge-warning';
-    const prob=pred.prob*100;
-    if (prob>70) cl='badge badge-success';
-    if (prob<40) cl='badge badge-danger';
+    const ch = (this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
+    let cl = 'badge badge-warning';
+    const prob = pred.prob * 100;
+    if (prob > 70) cl = 'badge badge-success';
+    if (prob < 40) cl = 'badge badge-danger';
     this.showInfo(ch, `${pred.label} ${prob.toFixed(2)}%`, 'badge badge-warning');
   }
 
@@ -441,10 +455,10 @@ export class LoadTrainingImgsComponent implements OnInit {
  */
 function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
   if (!files) return;
-  const thats=this;
+  const thats = this;
   const files2 = files.filter(file => file.fileEntry.isFile);
   console.log(`Hay ${files2.length} imagenes`);
-  const files3: Ifl[] = files2.map((file) => ({ file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath) }));
+  const files3: Ifl[] = files2.map((file) => ({file: (file.fileEntry as FileSystemFileEntry), label: getFileLabel(file.relativePath)}));
   return Rx.from(files3).pipe(
     mergeMap((val: Ifl) => readFileSFEAsDataURL2$(val)),
     mergeMap((val: Ifl2) => srcToImg$(val)),
@@ -498,7 +512,7 @@ function readFileSFEAsDataURL2$(fileNfo: Ifl): Rx.Observable<Ifl2> {
     console.log(`loading file: ${fileNfo.file.name}`);
     fileReader.onload = () => {
       console.log(`Loaded file: ${fileNfo.file.name}`);
-      const res: Ifl2 = { ...fileNfo, fileReaded: fileReader.result };
+      const res: Ifl2 = {...fileNfo, fileReaded: fileReader.result};
       observable.next(res);// observable.next(fileReader.result);
       observable.complete();
     };
@@ -520,13 +534,13 @@ function srcToImg$(src: Ifl2): Rx.Observable<Ifl3> {
   console.log(`tensores en srcToImg$().1: ${tf.memory().numTensors} creando tensor desde imagen`);
   return Rx.Observable.create((observable) => {
     const img = new Image();
-    img.onload = function() {
-      const res: Ifl3 = { ...src, img, data: tf.browser.fromPixels(img) };
+    img.onload = function () {
+      const res: Ifl3 = {...src, img, data: tf.browser.fromPixels(img)};
       // console.log('pasada imagen a tensor');
       observable.next(res);
       observable.complete();
     };
-    img.onerror = function(err) {
+    img.onerror = function (err) {
       observable.error(err);
     };
     img.src = src.fileReaded as any;
@@ -566,13 +580,13 @@ function getFileLabel(fullPath: string): string {
 function cropImage(img: tf.Tensor): tf.Tensor {
   let width = img.shape[0];
   let height = img.shape[1];
-  const isEvent= (n: number) => n % 2 === 0;
-  if(!isEven(width)) width--;
-  if(!isEven(height)) height--;
+  const isEvent = (n: number) => n % 2 === 0;
+  if (!isEven(width)) width--;
+  if (!isEven(height)) height--;
 
   // use the shorter side as the size to which we will crop
   const shorterSide = Math.min(width, height);
-  
+
   // calculate beginning and ending crop points
   const startingHeight = (height - shorterSide) / 2;
   const startingWidth = (width - shorterSide) / 2;  // const startingWidth = Math.floor((width - shorterSide) / 2);
@@ -604,7 +618,7 @@ function batchImage(image: tf.Tensor): tf.Tensor {
  */
 function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
   console.log(`loadAndProcessImage init: ${tf.memory().numTensors} tensors. Creamos uno nuevo modificado`);
-  const res= tf.tidy(() => {
+  const res = tf.tidy(() => {
     try {
       const croppedImage: tf.Tensor3D = cropImage(image) as tf.Tensor3D;
       const resizedImage = tf.image.resizeBilinear(croppedImage, [224, 224]); // resizeImage(croppedImage);
