@@ -466,7 +466,7 @@ function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
       const prov = val.data;
       console.log(`tensores en imageLabels().1: ${tf.memory().numTensors}`);
       // console.log('Modificando tensor');
-      val.data = loadAndProcessImage(prov);
+      val.data = MlImgClassifier.loadAndProcessImage(prov);
       prov.dispose();
       console.log(`tensores en imageLabels().2: ${tf.memory().numTensors}`);
       return val;
@@ -573,65 +573,12 @@ function getFileLabel(fullPath: string): string {
   // var filename = nameString.split("/").pop();
 }
 
-/** Recorta el tamaño mas largo para convertir la imagen en cuadrada
- * @param img a recortar
- * @returns un tenbsor recortado
- */
-function cropImage(img: tf.Tensor): tf.Tensor {
-  let width = img.shape[0];
-  let height = img.shape[1];
-  const isEvent = (n: number) => n % 2 === 0;
-  if (!isEven(width)) width--;
-  if (!isEven(height)) height--;
 
-  // use the shorter side as the size to which we will crop
-  const shorterSide = Math.min(width, height);
 
-  // calculate beginning and ending crop points
-  const startingHeight = (height - shorterSide) / 2;
-  const startingWidth = (width - shorterSide) / 2;  // const startingWidth = Math.floor((width - shorterSide) / 2);
-  const endingHeight = startingHeight + shorterSide;
-  const endingWidth = startingWidth + shorterSide;
 
-  //  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
-  // return image data cropped to those points
-  return img.slice([startingWidth, startingHeight, 0], [endingWidth, endingHeight, 3]);
-}
 
-function isEven(n) {
-  return n % 2 == 0;
-}
 
-/** Expands our Tensor and translates the integers into floats with
- *
- * @param image Image in format tensor (3 matrix)
- */
-function batchImage(image: tf.Tensor): tf.Tensor {
-  // Expand our tensor to have an additional dimension, whose size is 1
-  const batchedImage = image.expandDims(0);
-  // Turn pixel data into a float between -1 and 1.
-  return batchedImage.toFloat().div(tf.scalar(127)).sub(tf.scalar(1));
-}
 
-/** Deja la imagen (tensor) con el formato adecuado para su procesamiento
- * @param image - tensor formado a partir de una imagen
- */
-function loadAndProcessImage(image: tf.Tensor): tf.Tensor {
-  console.log(`loadAndProcessImage init: ${tf.memory().numTensors} tensors. Creamos uno nuevo modificado`);
-  const res = tf.tidy(() => {
-    try {
-      const croppedImage: tf.Tensor3D = cropImage(image) as tf.Tensor3D;
-      const resizedImage = tf.image.resizeBilinear(croppedImage, [224, 224]); // resizeImage(croppedImage);
-      const batchedImage = batchImage(resizedImage);
-      return batchedImage;
-    } catch (e) {
-      console.error(e);
-    }
-    return null;
-  });
-  console.log(`loadAndProcessImage end: ${tf.memory().numTensors} tensors`);
-  return res;
-}
 
 function sendMessage(message: string, cb: (err: any, res: any) => void) {
   // sendJS.sendMsg(message, cb);

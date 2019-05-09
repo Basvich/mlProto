@@ -3,6 +3,9 @@ import * as tf from '@tensorflow/tfjs';
 import {map} from 'rxjs/operators';
 import {oneHot, Tensor, Rank, io} from '@tensorflow/tfjs';
 import {TypedArray} from './types';
+import {isArray, debug} from 'util';
+import {DebugRendererFactory2} from '@angular/core/src/view/services';
+import {assert} from '@tensorflow/tfjs-core/dist/util';
 
 
 const PRETRAINED_MODELS_KEYS = {
@@ -38,21 +41,21 @@ export interface IResPredict {
 
 /** Clase que encapsula unas cuantas funcionalidades para facilitar el uso de redes para clasificar imagenes */
 export class MlImgClassifier {
+
   xs: tf.Tensor;
   ys: tf.Tensor;
   /** clase que encapsula las etiquetas */
   classes: any;
-  labelMap=new Map<number, string>();
-  
-  public lastModel: tf.Sequential;
+  labelMap: Array<string> = [];
 
-  constructor() {
-    // this.init();
-  }
+  public lastModel: tf.Sequential;
 
   /** Red preentrenada generica que sirve para clasificar imagenes */
   public pretrainedModel: tf.LayersModel;
 
+  constructor() {
+    // this.init();
+  }
 
   /** Devuelve las dimensiones del modelo
    * @param md - Modelo del que obtiene las dimensiones
@@ -97,6 +100,8 @@ export class MlImgClassifier {
     }, undefined);
   }
 
+
+
   /**
    * OneHot encoding: https://hackernoon.com/what-is-one-hot-encoding-why-and-when-do-you-have-to-use-it-e3c6186d008f
    *
@@ -113,6 +118,88 @@ export class MlImgClassifier {
     }), data);
   }
 
+  /** Deja la imagen (tensor) con el formato adecuado para su procesamiento
+   * @param image - tensor formado a partir de una imagen
+   */
+  public static loadAndProcessImage(image: tf.Tensor): tf.Tensor {
+    console.log(`loadAndProcessImage init: ${tf.memory().numTensors} tensors. Creamos uno nuevo modificado`);
+    const res = tf.tidy(() => {
+      try {
+        const croppedImage: tf.Tensor3D = MlImgClassifier.cropImage(image) as tf.Tensor3D;
+        const resizedImage = tf.image.resizeBilinear(croppedImage, [224, 224]); // resizeImage(croppedImage);
+        const batchedImage = MlImgClassifier.batchImage(resizedImage);
+        return batchedImage;
+      } catch (e) {
+        console.error(e);
+      }
+      return null;
+    });
+    console.log(`loadAndProcessImage end: ${tf.memory().numTensors} tensors`);
+    return res;
+  }
+
+  /** Recorta el tamaño mas largo para convertir la imagen en cuadrada
+   * @param img a recortar
+   * @returns un tenbsor recortado
+   */
+  protected static cropImage(img: tf.Tensor): tf.Tensor {
+    let width = img.shape[0];
+    let height = img.shape[1];
+    const isEvent = (n: number) => n % 2 === 0;
+    function isEven(n) {
+      return n % 2 === 0;
+    }
+    if (!isEven(width)) width--;
+    if (!isEven(height)) height--;
+
+    // use the shorter side as the size to which we will crop
+    const shorterSide = Math.min(width, height);
+
+    // calculate beginning and ending crop points
+    const startingHeight = (height - shorterSide) / 2;
+    const startingWidth = (width - shorterSide) / 2;  // const startingWidth = Math.floor((width - shorterSide) / 2);
+    const endingHeight = startingHeight + shorterSide;
+    const endingWidth = startingWidth + shorterSide;
+
+    //  console.log(`(${startingWidth}, ${startingHeight}) -> (${endingWidth}, ${endingHeight})`);
+    // return image data cropped to those points
+    return img.slice([startingWidth, startingHeight, 0], [endingWidth, endingHeight, 3]);
+  }
+
+  /** Expands our Tensor and translates the integers into floats with
+   *
+   * @param image Image in format tensor (3 matrix)
+   */
+  protected static batchImage(image: tf.Tensor): tf.Tensor {
+    // Expand our tensor to have an additional dimension, whose size is 1
+    const batchedImage = image.expandDims(0);
+    // Turn pixel data into a float between -1 and 1.
+    return batchedImage.toFloat().div(tf.scalar(127)).sub(tf.scalar(1));
+  }
+
+  public init2(): Subject<void> {
+    const s = new Subject<void>();
+    this.loadPretrainedModel$().subscribe((md) => {
+      const dims = MlImgClassifier.getInputDims(md);
+      tf.tidy(() => {
+        md.predict(tf.zeros([1, ...dims, 3]));
+      });
+      this.pretrainedModel = md;
+      // console.log(this.pretrainedModel.summary());
+      console.log('Cargado el modelo base');
+      // s.next();
+    },
+      (err) => {
+        console.error(err);
+        s.error(err);
+      },
+      () => {
+        console.log('ilImgClass inited');
+        s.next();
+      }
+    );
+    return s;
+  }
 
   /** Se añade todos los datos que se van a usar para clasificar.
    * cada dato es un tensor correctamente dimensionado, que representa una imagen
@@ -122,7 +209,9 @@ export class MlImgClassifier {
     console.log('MlImgClassifier.addData()');
     if (!imgs) return;
     const labels: string[] = imgs.map((val: IImgLabel) => val.label);  // Obtenemos un array con solo los labels (hay repes)
+    this.getIndexLabel(labels);
     const y = MlImgClassifier.getYvaluesFromLabels(labels);
+
     console.log(y.toString());
     console.log(`Tenemos YS tensor de dimensiones: ${y.shape}`);
     const arrImgs: Tensor[] = imgs.map((val: IImgLabel) => this.activateImage(val.img));  // Obtenemos un array con solo las imgsns
@@ -155,9 +244,6 @@ export class MlImgClassifier {
     this.lastModel = model;
     // console.log(model.summary());
     const batchSize = this.getBatchSize(params.batchSize, this.xs);
-    // console.log(`model ${model.name}`);
-    // console.log(`xs ${this.xs.shape}  `);
-    // console.log(`ys ${this.ys.shape} `);
     return from(model.fit(this.xs, this.ys, {
       ...params,
       batchSize,
@@ -198,6 +284,8 @@ export class MlImgClassifier {
       (a) =>
         a[1] === iMin.i
     );
+    const label2=this.labelMap[iMin.i];
+    tf.util.assert(clsii[0]===label2, () => 'no esta bien el label map');
     // console.log(clsii);
     const res: IResPredict = {
       label: clsii[0],
@@ -206,6 +294,10 @@ export class MlImgClassifier {
     return res;
   }
 
+  /** TEST
+   * 
+   * @param img 
+   */
   public predict2(img: tf.Tensor): IResPredict {
     if (!this.lastModel) throw new Error('No model');
     if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
@@ -250,29 +342,7 @@ export class MlImgClassifier {
     );
   }
 
-  public init2(): Subject<void> {
-    const s = new Subject<void>();
-    this.loadPretrainedModel$().subscribe((md) => {
-      const dims = MlImgClassifier.getInputDims(md);
-      tf.tidy(() => {
-        md.predict(tf.zeros([1, ...dims, 3]));
-      });
-      this.pretrainedModel = md;
-      // console.log(this.pretrainedModel.summary());
-      console.log('Cargado el modelo base');
-      // s.next();
-    },
-      (err) => {
-        console.error(err);
-        s.error(err);
-      },
-      () => {
-        console.log('ilImgClass inited');
-        s.next();
-      }
-    );
-    return s;
-  }
+
 
   public save$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig) {
     return from(this.lastModel.save(handlerOrURL));
@@ -360,12 +430,27 @@ export class MlImgClassifier {
     );
   }
 
-  /** Gran icognita de momento saber para que hay que hacer esto */
+  /** La red preentrenada realiza un primer procesado de la imagen */
   protected activateImage(processedImage: Tensor): any {
-    // const pred=processedImage;
-    // TODO: averiguar para que sirve
     const pred = this.pretrainedModel.predict(processedImage);
     return pred;
+  }
+
+  /** 
+   * @param s texto o array de textos para obtener los indices
+   */
+  protected getIndexLabel(s: string | Array<string>): number | Array<number> {
+    if (Array.isArray(s)) {
+      const res=[];
+      (s as Array<string>).forEach(label => {
+        res.push(this.getIndexLabel(label));
+      });
+      return res;
+    } else {
+      let res = this.labelMap.indexOf(s);
+      if (res < 0) res = this.labelMap.push(s) - 1;
+      return res;
+    }
   }
 }
 
