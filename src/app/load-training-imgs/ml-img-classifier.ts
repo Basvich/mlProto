@@ -9,15 +9,24 @@ import {assert} from '@tensorflow/tfjs-core/dist/util';
 
 
 const PRETRAINED_MODELS_KEYS = {
-  MOBILENET: 'mobilenet_v1_0.25_224',
+  MOBILENET: 'mobilenet_v1_0.25_224'
 };
 
-const PRETRAINED_MODELS = {
-  [PRETRAINED_MODELS_KEYS.MOBILENET]: {
+interface CfgLayersModels{
+  url: string;
+  layer: string;
+}
+
+/** Modelos preentrenados estandar */
+const StdPretrainedModels: Map<string, CfgLayersModels> = new Map(
+  [[PRETRAINED_MODELS_KEYS.MOBILENET, {
     url: 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json',
     layer: 'conv_pw_13_relu',
-  },
-};
+  }]]
+);
+
+
+
 
 /** Tipo de dato que se usa realmente para el entrenamiento. El data es el tensor en el tamaño adecuado
  * a la red.
@@ -33,6 +42,8 @@ export interface IParams {
   epochs?: number;
 }
 
+/** El resultado de una predicción. La etiqueta y el % de fiabilidad
+ */
 export interface IResPredict {
   label: string;
   prob: number;
@@ -177,16 +188,17 @@ export class MlImgClassifier {
     return batchedImage.toFloat().div(tf.scalar(127)).sub(tf.scalar(1));
   }
 
-  public init2(): Subject<void> {
+  public init2(preModel=null): Subject<void> {
+    console.log(`init2(${preModel})`);
     const s = new Subject<void>();
-    this.loadPretrainedModel$().subscribe((md) => {
+    this.loadPretrainedModel$(preModel).subscribe((md) => {
       const dims = MlImgClassifier.getInputDims(md);
       tf.tidy(() => {
         md.predict(tf.zeros([1, ...dims, 3]));
       });
       this.pretrainedModel = md;
       // console.log(this.pretrainedModel.summary());
-      console.log('Cargado el modelo base');
+      console.log('init2() Cargado el modelo base');
       // s.next();
     },
       (err) => {
@@ -350,6 +362,7 @@ export class MlImgClassifier {
 
   public load$(handlerOrURL: io.IOHandler | string, config?: io.SaveConfig) {
     const thats = this;
+    console.log(`MlImgClassifier.load$(${handlerOrURL})`);
     return from(tf.loadLayersModel(handlerOrURL)).pipe(
       map((mod) => {
         console.log('cargado modelo');
@@ -357,6 +370,7 @@ export class MlImgClassifier {
           thats.lastModel.dispose();
         }
         thats.lastModel = mod as tf.Sequential;
+        return thats;
       })
     );
   }
@@ -418,7 +432,17 @@ export class MlImgClassifier {
     if (pretrainedModel instanceof tf.LayersModel) {
       return of(pretrainedModel);
     }
-    const config = PRETRAINED_MODELS[pretrainedModel];
+    let config=null;
+    if (pretrainedModel==null){
+       config = StdPretrainedModels.get(PRETRAINED_MODELS_KEYS.MOBILENET);
+    }else{
+      if (typeof(pretrainedModel)==='string'){
+         config=StdPretrainedModels[pretrainedModel];
+      } else {
+        config = pretrainedModel;
+      }
+    }
+    console.log(`loadPretrainedModel$() url:'${config.url}'`);
     return from(tf.loadLayersModel(config.url)).pipe(
       map((model: tf.LayersModel) => {
         const layer = model.getLayer(config.layer);
