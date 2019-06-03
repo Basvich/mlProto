@@ -6,6 +6,7 @@ import {TypedArray} from './types';
 import {isArray, debug} from 'util';
 import {DebugRendererFactory2} from '@angular/core/src/view/services';
 import {assert} from '@tensorflow/tfjs-core/dist/util';
+import MLClassifier from './index';
 
 
 const PRETRAINED_MODELS_KEYS = {
@@ -56,7 +57,8 @@ export class MlImgClassifier {
   xs: tf.Tensor;
   ys: tf.Tensor;
   /** clase que encapsula las etiquetas */
-  classes: any;
+  //classes: any;
+  /** Array con el label de cada clases */
   labelMap: Array<string> = [];
 
   public lastModel: tf.Sequential;
@@ -109,6 +111,22 @@ export class MlImgClassifier {
         return ys;
       });
     }, undefined);
+  }
+
+  private static getYValuesFromLabelsIndex(labelIndex: number[], classLength: number): tf.Tensor2D{
+      return labelIndex.reduce((data: tf.Tensor2D | undefined, li: number) => {
+        const y = MlImgClassifier.miOneHot(li, classLength) as tf.Tensor2D;
+        return tf.tidy(() => {
+          if (data === undefined) {
+            return tf.keep(y);
+          }
+          const old = data;
+          const ys = tf.keep(old.concat(y, 0));
+          old.dispose();
+          y.dispose();
+          return ys;
+        });
+      }, undefined );
   }
 
 
@@ -221,16 +239,20 @@ export class MlImgClassifier {
     console.log('MlImgClassifier.addData()');
     if (!imgs) return;
     const labels: string[] = imgs.map((val: IImgLabel) => val.label);  // Obtenemos un array con solo los labels (hay repes)
-    this.getIndexLabel(labels);
+    const labelsi=this.getIndexLabel(labels) as number[];
     const y = MlImgClassifier.getYvaluesFromLabels(labels);
+    const y2= MlImgClassifier.getYvaluesFromLabels(this.labelMap);
+    const y3= MlImgClassifier.getYValuesFromLabelsIndex(labelsi, this.labelMap.length);
 
-    console.log(y.toString());
-    console.log(`Tenemos YS tensor de dimensiones: ${y.shape}`);
+    console.log('y:' + y.toString());
+    console.log('y2:' + y2.toString());
+    console.log('y3:' + y3.toString());
+    console.log(`Tenemos YS tensor de dimensiones: ${y.shape}  -- ${y2.shape} -- ${y3.shape}  `);
     const arrImgs: Tensor[] = imgs.map((val: IImgLabel) => this.activateImage(val.img));  // Obtenemos un array con solo las imgsns
     const x = MlImgClassifier.addImgData(arrImgs);
     console.log(`Tenemos XS tensor de dimensiones: ${x.shape}`);
-    this.classes = getClasses(labels);
-    this.ys = y;
+    // this.classes = getClasses(labels);
+    this.ys = y3; // y;
     this.xs = x;
   }
 
@@ -251,7 +273,7 @@ export class MlImgClassifier {
    */
   public train$(params: IParams = {}): Observable<tf.History> {
     if (!this.ys || !this.xs) throw new Error('incomplete training data');
-    const nClasses = Object.keys(this.classes).length;
+    const nClasses = this.labelMap.length; // Object.keys(this.classes).length;
     const model = this.getModel(this.pretrainedModel, nClasses, params);
     this.lastModel = model;
     // console.log(model.summary());
@@ -291,48 +313,11 @@ export class MlImgClassifier {
     // console.log(r1);
     // console.log(iMin);
     /*const classId = (r1.data())[0];*/
-    const clsi = Object.entries(this.classes);
-    const clsii = clsi.find(
-      (a) =>
-        a[1] === iMin.i
-    );
     const label2=this.labelMap[iMin.i];
-    tf.util.assert(clsii[0]===label2, () => 'no esta bien el label map');
+    //tf.util.assert(clsii[0]===label2, () => 'no esta bien el label map');
     // console.log(clsii);
     const res: IResPredict = {
-      label: clsii[0],
-      prob: iMin.v
-    };
-    return res;
-  }
-
-  /** TEST
-   * 
-   * @param img 
-   */
-  public predict2(img: tf.Tensor): IResPredict {
-    if (!this.lastModel) throw new Error('No model');
-    if (!(img instanceof tf.Tensor)) throw new Error('image is not tensor');
-    const predictions = this.lastModel.predict(img);
-    // console.log(predictions.toString());
-    const dsPred: TypedArray = (predictions as Tensor).dataSync();
-    const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
-    let iMin = {v: 0, i: 0};
-
-    for (let i = 0; i < dsPred.length; i++) {
-      if (dsPred[i] > iMin.v) iMin = {v: dsPred[i], i};
-    }
-    // console.log(r1);
-    // console.log(iMin);
-    /*const classId = (r1.data())[0];*/
-    const clsi = Object.entries(this.classes);
-    const clsii = clsi.find(
-      (a) =>
-        a[1] === iMin.i
-    );
-    // console.log(clsii);
-    const res: IResPredict = {
-      label: clsii[0],
+      label: label2,
       prob: iMin.v
     };
     return res;
@@ -466,9 +451,10 @@ export class MlImgClassifier {
   protected getIndexLabel(s: string | Array<string>): number | Array<number> {
     if (Array.isArray(s)) {
       const res=[];
-      (s as Array<string>).forEach(label => {
+      s.forEach(label => {
         res.push(this.getIndexLabel(label));
       });
+      console.log(res);
       return res;
     } else {
       let res = this.labelMap.indexOf(s);
