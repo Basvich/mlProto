@@ -53,17 +53,17 @@ export interface IResPredict {
 
 /** Clase que encapsula unas cuantas funcionalidades para facilitar el uso de redes para clasificar imagenes */
 export class MlImgClassifier {
-
+  /** Valores x (entrada) usados para entrenar */
   xs: tf.Tensor;
+  /** Valores y (salida) usados como objectivo deseado de los x */
   ys: tf.Tensor;
-  /** clase que encapsula las etiquetas */
-  //classes: any;
+
   /** Array con el label de cada clases */
   labelMap: Array<string> = [];
 
   public lastModel: tf.Sequential;
 
-  /** Red preentrenada generica que sirve para clasificar imagenes */
+  /** Red preentrenada generica que sirve para preclasificar imagenes */
   public pretrainedModel: tf.LayersModel;
 
   constructor() {
@@ -113,6 +113,10 @@ export class MlImgClassifier {
     }, undefined);
   }
 
+  /** Crea el conjunto de valores para y validos, pero a partir del array de indices deseados (no del nombre de las clases)
+   * @param labelIndex El indice de las clases que se tienen que devolver para cada x
+   * @param classLength Cuantas clases diferentes hay
+   */
   private static getYValuesFromLabelsIndex(labelIndex: number[], classLength: number): tf.Tensor2D{
       return labelIndex.reduce((data: tf.Tensor2D | undefined, li: number) => {
         const y = MlImgClassifier.miOneHot(li, classLength) as tf.Tensor2D;
@@ -240,19 +244,12 @@ export class MlImgClassifier {
     if (!imgs) return;
     const labels: string[] = imgs.map((val: IImgLabel) => val.label);  // Obtenemos un array con solo los labels (hay repes)
     const labelsi=this.getIndexLabel(labels) as number[];
-    const y = MlImgClassifier.getYvaluesFromLabels(labels);
-    const y2= MlImgClassifier.getYvaluesFromLabels(this.labelMap);
     const y3= MlImgClassifier.getYValuesFromLabelsIndex(labelsi, this.labelMap.length);
-
-    console.log('y:' + y.toString());
-    console.log('y2:' + y2.toString());
-    console.log('y3:' + y3.toString());
-    console.log(`Tenemos YS tensor de dimensiones: ${y.shape}  -- ${y2.shape} -- ${y3.shape}  `);
     const arrImgs: Tensor[] = imgs.map((val: IImgLabel) => this.activateImage(val.img));  // Obtenemos un array con solo las imgsns
+    // pasamos a un único Tensor rango 4 de n imagenes X 7 X 7 X 256
     const x = MlImgClassifier.addImgData(arrImgs);
     console.log(`Tenemos XS tensor de dimensiones: ${x.shape}`);
-    // this.classes = getClasses(labels);
-    this.ys = y3; // y;
+    this.ys = y3;
     this.xs = x;
   }
 
@@ -299,8 +296,6 @@ export class MlImgClassifier {
       activatedImg.dispose();
       return r;
     });
-    // console.log(predictions.toString());
-    console.log(`predict().1: ${tf.memory().numTensors}`);
     const dsPred: TypedArray = (predictions as Tensor).dataSync();
     // const r1 = (predictions as tf.Tensor).as1D().argMax();  // Devuelve el indice del mayor
     let iMin = {v: 0, i: 0};
@@ -309,13 +304,7 @@ export class MlImgClassifier {
       if (dsPred[i] > iMin.v) iMin = {v: dsPred[i], i};
     }
     (predictions as tf.Tensor).dispose(); // el resultado es un tensor
-    console.log(`predict().2: ${tf.memory().numTensors}`);
-    // console.log(r1);
-    // console.log(iMin);
-    /*const classId = (r1.data())[0];*/
     const label2=this.labelMap[iMin.i];
-    //tf.util.assert(clsii[0]===label2, () => 'no esta bien el label map');
-    // console.log(clsii);
     const res: IResPredict = {
       label: label2,
       prob: iMin.v
@@ -323,7 +312,8 @@ export class MlImgClassifier {
     return res;
   }
 
-  protected init() {
+
+ /*  protected init() {
     this.loadPretrainedModel$().subscribe((md) => {
       const dims = MlImgClassifier.getInputDims(md);
       console.log(`init() dims:${dims}`);
@@ -337,7 +327,7 @@ export class MlImgClassifier {
       (err) => console.error(err),
       () => console.log('ilImgClass inited')
     );
-  }
+  } */
 
 
 
@@ -361,7 +351,7 @@ export class MlImgClassifier {
   }
 
   public load() {
-    //this.lastModel.loadWeights()
+    // this.lastModel.loadWeights()
   }
 
   defaultLayers = ({classes}: {classes: number}) => {
@@ -445,7 +435,7 @@ export class MlImgClassifier {
     return pred;
   }
 
-  /** 
+  /**
    * @param s texto o array de textos para obtener los indices
    */
   protected getIndexLabel(s: string | Array<string>): number | Array<number> {
