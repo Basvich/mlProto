@@ -6,6 +6,15 @@
     <button type="button" class="btn" (click)="cycle()" ngbTooltip="un ciclo de animacion">
       1 ciclo
     </button>
+    <button type="button" class="btn" (click)="start()" ngbTooltip="start animacion">
+      start
+    </button>
+    <button type="button" class="btn" (click)="stop()" ngbTooltip="stop animacion">
+      stop
+    </button>
+    <button type="button" class="btn" (click)="startRecord()" ngbTooltip="stop animacion">
+      record
+    </button>
   </div>
 </div>
 <div class="row">    
@@ -15,5 +24,7 @@
     </div>
 </div>
 <div class="row">
-  <div class="col">en la parte inferior</div>
+  <div class="col">
+    <input type="range" #refForce min="-10" max="10" (input)="changeForce2(refForce.value)" (change)="changeForce(refForce.value)">
+  </div>
 </div>
