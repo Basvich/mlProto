@@ -12,19 +12,30 @@
     <button type="button" class="btn" (click)="stop()" ngbTooltip="stop animacion">
       stop
     </button>
-    <button type="button" class="btn" (click)="startRecord()" ngbTooltip="stop animacion">
-      record
-    </button>
+    
+  </div>
+  <div class="col">
+   
   </div>
 </div>
 <div class="row">    
     <div class="col" id="myContainer"></div>  
     <div class="col">
-      por aqui unos controles
+      <button type="button" class="btn" (click)="startRecord()" ngbTooltip="start recording samples">
+        start record 
+      </button>
+      <button type="button" class="btn" (click)="stopRecord()" ngbTooltip="stop recording">
+        stop record
+      </button>   
+      <span class="badge badge-secondary">{{recordedCount}}</span>
     </div>
 </div>
 <div class="row">
   <div class="col">
     <input type="range" #refForce min="-10" max="10" (input)="changeForce2(refForce.value)" (change)="changeForce(refForce.value)">
+    <span class="badge badge-secondary">{{horForz.x}}</span>
+    <button type="button" class="btn" (click)="offsetize()" ngbTooltip="random position">
+      randomize
+    </button>
   </div>
 </div>

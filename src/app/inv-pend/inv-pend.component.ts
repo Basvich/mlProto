@@ -78,6 +78,16 @@ export class InvPendComponent implements OnInit {
     this.enableRecord=true;
   }
 
+  stopRecord(){
+    this.enableRecord=false;
+  }
+  /** Pone el carro en posicion y velocidad aleatoria */
+  offsetize(){
+    
+    this.carro.velocity.x=Math.random()*4-2;
+    this.carro.position.x=this.rndNext(250,450);
+  }
+
   /**
    * Guarda un registro del estado actual
    */
@@ -137,6 +147,12 @@ export class InvPendComponent implements OnInit {
     this.canvasP5.line(0, 350, 600, 350);
     this.bola.display();
     this.carro.display();
+  }
+
+  rndNext(max: number, min: number): number {
+    if (!min)min=0;
+    const r=Math.trunc(Math.random() * (max-min))+min;
+    return r;
   }
 
 }
