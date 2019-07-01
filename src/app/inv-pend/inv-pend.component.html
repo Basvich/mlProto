@@ -12,7 +12,9 @@
     <button type="button" class="btn" (click)="stop()" ngbTooltip="stop animacion">
       stop
     </button>
-    
+    <button type="button" class="btn" (click)="test()" ngbTooltip="test a function">
+      test
+    </button>
   </div>
   <div class="col">
    
@@ -28,6 +30,12 @@
         stop record
       </button>   
       <span class="badge badge-secondary">{{recordedCount}}</span>
+      <button type="button" class="btn" (click)="train()" ngbTooltip="train()">
+        train
+      </button> ´
+      <button type="button" class="btn" (click)="showVisor()" ngbTooltip="Muestra el visor integrado">
+        showVisor()
+      </button> 
     </div>
 </div>
 <div class="row">
