@@ -4,7 +4,6 @@ import {map} from 'rxjs/operators';
 import {oneHot, Tensor, Rank, io} from '@tensorflow/tfjs';
 import {TypedArray} from './types';
 import {isArray, debug} from 'util';
-import {DebugRendererFactory2} from '@angular/core/src/view/services';
 import {assert} from '@tensorflow/tfjs-core/dist/util';
 import MLClassifier from './index';
 

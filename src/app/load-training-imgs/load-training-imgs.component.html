@@ -16,9 +16,9 @@
         <span class="badge badge-info">2</span><span>Ficheros aprendizaje</span>
       </div>
       <div class="col">
-        <file-drop headertext=" Arrastrar aqui las imagenes" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+        <ngx-file-drop headertext=" Arrastrar aqui las imagenes" (onFileDrop)="dropped2($event)" (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
           <span>-</span>
-        </file-drop>
+        </ngx-file-drop>
       </div>
       <div class="col-2">
         <span id="sfiles" class="badge badge-secondary">Pending</span>
@@ -55,8 +55,8 @@
         <span>test single image</span>
       </div>
       <div class="col">
-        <file-drop headertext=" Arrastrar aqui una imagen" (onFileDrop)="dropped3($event)">
-        </file-drop>
+        <ngx-file-drop headertext=" Arrastrar aqui una imagen" (onFileDrop)="dropped3($event)">
+        </ngx-file-drop>
       </div>
       <div class="col">
         <img id="idImgTest" />

@@ -34,7 +34,7 @@ export class InvPendComponent implements OnInit {
 
   model: Sequential;
 
-  @ViewChild('refForce') rangeForce: ElementRef;
+  @ViewChild('refForce', {static: false}) rangeForce: ElementRef;
 
   constructor() {}
 

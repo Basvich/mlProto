@@ -27,7 +27,7 @@ export class LoadMl5Component implements OnInit {
   featureExtractor: any;
   classifier: any;
   currImgNameTest: string = null;
-  @ViewChild('miImg') viewImg: ElementRef;
+  @ViewChild('miImg', {static: false}) viewImg: ElementRef;
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
