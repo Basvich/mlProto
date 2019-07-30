@@ -15,6 +15,8 @@ export class OGPhys {
 
   applyForce(force: p5.Vector): void {
     const f = p5.Vector.div(force, this.mass);
+     // Borrar aceleración en cada cuadro
+    this.acceleration.mult(0);
     this.acceleration.add(f);
   }
 
@@ -23,8 +25,7 @@ export class OGPhys {
     this.velocity.add(this.acceleration);
     // La posición es cambiada según la velocidad
     this.position.add(this.velocity);
-    // Borrar aceleración en cada cuadro
-    this.acceleration.mult(0);
+   
   }
 
 }

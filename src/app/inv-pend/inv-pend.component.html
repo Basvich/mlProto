@@ -17,33 +17,71 @@
     </button>
   </div>
   <div class="col">
-   
+
   </div>
 </div>
-<div class="row">    
-    <div class="col" id="myContainer"></div>  
-    <div class="col">
-      <button type="button" class="btn" (click)="startRecord()" ngbTooltip="start recording samples">
-        start record 
-      </button>
-      <button type="button" class="btn" (click)="stopRecord()" ngbTooltip="stop recording">
-        stop record
-      </button>   
-      <span class="badge badge-secondary">{{recordedCount}}</span>
-      <button type="button" class="btn" (click)="train()" ngbTooltip="train()">
-        train
-      </button> ´
-      <button type="button" class="btn" (click)="showVisor()" ngbTooltip="Muestra el visor integrado">
-        showVisor()
-      </button> 
-    </div>
+<div class="row">
+  <div class="col" id="myContainer"></div>
+
+</div>
+<div class="row">
+  <div class="col-3">
+    <input type="range" #refForce min="-1" max="1" (input)="changeForce2(refForce.value)" (change)="changeForce(refForce.value)" step="0.2">
+    <span class="badge badge-secondary" *ngIf="!horForz">{{horForz.x}}</span>
+    <button type="button" class="btn" (click)="offsetize()" ngbTooltip="random position">
+      randomize
+    </button>
+  </div>
+  <div class="col-1">
+    X:<span class="badge badge-info">{{carroX | number}}</span>
+  </div>
+  <div class="col-1">
+    V:<span class="badge badge-info">{{carroVX | number}}</span>
+  </div>
+  <div class="col-1">
+    F:<span class="badge badge-primary">{{horForz.x | number}}</span>
+  </div>
 </div>
 <div class="row">
   <div class="col">
-    <input type="range" #refForce min="-10" max="10" (input)="changeForce2(refForce.value)" (change)="changeForce(refForce.value)">
-    <span class="badge badge-secondary">{{horForz.x}}</span>
-    <button type="button" class="btn" (click)="offsetize()" ngbTooltip="random position">
-      randomize
+    <button type="button" class="btn" (click)="startRecord()" ngbTooltip="start recording samples">
+      start record
+    </button>
+    <button type="button" class="btn" (click)="loadRecord()" ngbTooltip="load previous rerded samples">
+      load samples
+    </button>
+    <button type="button" class="btn" (click)="stopRecord()" ngbTooltip="stop recording">
+      stop record
+    </button>
+
+    <span class="badge badge-secondary">{{recordedCount}}</span>
+    <button type="button" class="btn" (click)="train()" ngbTooltip="train()">
+      train
+    </button> ´
+    <button type="button" class="btn" (click)="showVisor()" ngbTooltip="Muestra el visor integrado">
+      show Visor
+    </button>
+    <button type="button" class="btn" (click)="showModel()" ngbTooltip="Muestra el modelo">
+      show Model
+    </button>
+    
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <input type="number" #filterVel min="-2" max="2" step="0.2" value="0"/>
+
+    <span class="badge badge-secondary">{{filterVel.value}}</span>
+
+    <button type="button" class="btn btn-primary" (click)="showDataIn(filterVel.value)" ngbTooltip="Muestra Datos de entrada">
+      show data In
+    </button>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <button type="button" class="btn btn-primary" (click)="startStopIA()" ngbTooltip="Start StopIA">
+      on off IA
     </button>
   </div>
 </div>

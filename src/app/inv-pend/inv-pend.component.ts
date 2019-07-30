@@ -3,7 +3,8 @@ import * as p5 from 'p5';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 import {Bola, Carro} from './gobjects';
-import {Sequential} from '@tensorflow/tfjs';
+import {Sequential, Tensor3D} from '@tensorflow/tfjs';
+import {map} from 'rxjs/operators';
 
 
 
@@ -11,6 +12,12 @@ interface IDataIn {
   pos: number;
   vel: number;
   acc: number;
+}
+
+interface IRange {
+  min: Array<number>;
+  max: Array<number>;
+  dif?: Array<number>;
 }
 
 @Component({
@@ -26,11 +33,16 @@ export class InvPendComponent implements OnInit {
   gravity: p5.Vector;
   horForz: p5.Vector;
   fricForz: p5.Vector;
+  carroX=0;
+  carroVX=0;
   enableRecord = false;
   recordedDin: Array<IDataIn> = [];
   recordedDout: Array<number> = [];
   recordedCount = 0;
   cycleCount = 0;
+  iaOn = false;
+  rangeIn: IRange = null;
+  rangeOut: IRange = null;
 
   model: Sequential;
 
@@ -49,8 +61,9 @@ export class InvPendComponent implements OnInit {
 
   /** Accion que se ejecuta en cada ciclo */
   cycle() {
-    this.fricForz.x=-this.carro.velocity.x*0.05;
-    this.bola.applyForce(this.gravity);    
+    if (this.iaOn) this.makePrediction();
+    this.fricForz.x = -this.carro.velocity.x * 0.05;
+    this.bola.applyForce(this.gravity);
     this.carro.applyForce(p5.Vector.add(this.fricForz, this.horForz));
     this.bola.update();
     this.carro.update();
@@ -58,7 +71,7 @@ export class InvPendComponent implements OnInit {
     this.canvasP5.redraw();
     this.bola.checkEdges();
     if (this.enableRecord) {
-      if (this.cycleCount % 10 === 0) this.recordSample();
+      if (this.cycleCount % 5 === 0) this.recordSample();
     }
     this.cycleCount++;
   }
@@ -90,23 +103,99 @@ export class InvPendComponent implements OnInit {
 
   stopRecord() {
     this.enableRecord = false;
+    localStorage.setItem('dataIn', JSON.stringify(this.recordedDin));
+    localStorage.setItem('dataOut', JSON.stringify(this.recordedDout));
   }
 
-  train(){
+  loadRecord() {
+    const sdin = localStorage.getItem('dataIn');
+    if (!sdin) return;
+    const sdout = localStorage.getItem('dataOut');
+    this.recordedDin = JSON.parse(sdin);
+    this.recordedDout = JSON.parse(sdout);
+  }
+
+  train() {
     this.stopRecord();
-    const tdata=this.createTensorsFrom(this.recordedDin, this.recordedDout);
+    const tdata = this.createTensorsFrom(this.recordedDin, this.recordedDout);
+    this.rangeIn = tdata.din.range;
+    this.rangeOut = tdata.dout.range;
+    this.rangeIn.dif = this.rangeIn.max.map((num, idx) => num - this.rangeIn.min[idx]);
+    this.rangeOut.dif = this.rangeOut.max.map((num, idx) => num - this.rangeOut.min[idx]);
+    this.rangeOut = tdata.dout.range;
     this.trainModel(this.model, tdata.din.data, tdata.dout.data).then(
-      (value: any) => { 
+      (value: any) => {
         console.log(value);
+        tdata.din.data.dispose();
+        tdata.din.data = null;
+        tdata.dout.data.dispose();
+        tdata.dout.data = null;
       }
     );
   }
 
-  showVisor(){
+  makePrediction() {
+    this.carroX=this.carro.position.x - 300;
+    this.carroVX=this.carro.velocity.x;
+    tf.tidy(() => {
+      const dIn = [this.carroX ,this.carroVX=this.carro.velocity.x , this.carro.acceleration.x];
+      const tIn = tf.tensor(dIn, [1, 3]); // tf.tensor3d(dIn);
+      // tIn.print();
+      const tIn2 = tIn.sub(this.rangeIn.min).div(this.rangeIn.dif);
+      // tIn2.print();
+      const preds = this.model.predict(tIn2) as tf.Tensor;
+      if (preds) {
+       // (preds as tf.Tensor).print();
+        const unNormPreds = preds.mul(this.rangeOut.dif).add(this.rangeOut.min);
+        const d = unNormPreds.dataSync()[0];
+        this.horForz.x = d;
+      }
+    });
+  }
+
+  showVisor() {
     const visorInstance = tfvis.visor();
     if (!visorInstance.isOpen()) {
       visorInstance.toggle();
     }
+  }
+
+  showModel() {
+    const surface = {
+      name: 'Model Summary',
+      tab: 'Model'
+    };
+    tfvis.show.modelSummary(surface, this.model);
+  }
+
+  showDataIn(velFilter: number) {
+    // Load and plot the original input data that we are going to train on.
+    const d1=this.recordedDin.map((d,i)=>({
+      pos:d.pos,
+      vel:d.vel,
+      f:this.recordedDout[i]
+    }));
+    const d2=d1.filter((d)=>Math.abs(d.vel-velFilter)<0.2);
+    const values = d2.map( (d,i: number) => ({
+      x: d.pos,
+      y: d.f
+    }));
+    
+    
+
+    tfvis.render.scatterplot(
+      {name: 'Posicion v Acc'},
+      {values},
+      {
+        xLabel: 'Pos',
+        yLabel: 'Acc',
+        height: 300
+      }
+    );
+  }
+
+  startStopIA() {
+    this.iaOn = !this.iaOn;
   }
 
   async trainModel(model, inputs, labels) {
@@ -122,35 +211,40 @@ export class InvPendComponent implements OnInit {
     return await model.fit(inputs, labels, {
       batchSize,
       epochs,
-      shuffle: true
+      shuffle: true,
+      callbacks: tfvis.show.fitCallbacks(
+        {name: 'Training Performance'},
+        ['loss', 'mse'],
+        {height: 200, callbacks: ['onEpochEnd']}
+      )
     });
   }
 
 
-  test(){
-    const d=[[1,2,3],[2,3,1],[4,1,0],[0,2,1]]; // [1,2,3,4]; // 
-    const dt=tf.tensor(d);
+  test() {
+    const d = [[1, 2, 3], [2, 3, 1], [4, 1, 0], [0, 2, 1]]; // [1,2,3,4]; // 
+    const dt = tf.tensor(d);
     dt.print();
-    const tdt=dt.transpose();
+    const tdt = dt.transpose();
     tdt.print();
-    const axis=dt.rank-1;
-    const min=tdt.min(axis, true);
-    const max=tdt.max(axis, true);
-    const amin=min.dataSync();
-    const arrmin=Array.from(amin);
+    const axis = dt.rank - 1;
+    const min = tdt.min(axis, true);
+    const max = tdt.max(axis, true);
+    const amin = min.dataSync();
+    const arrmin = Array.from(amin);
     min.print();
     max.print();
-    const rang=max.sub(min);
-    const tdt2=tdt.sub(min).div(rang);
+    const rang = max.sub(min);
+    const tdt2 = tdt.sub(min).div(rang);
     tdt2.print();
-    const tdt3=tdt2.transpose();
+    const tdt3 = tdt2.transpose();
     tdt3.print();
-    //const mm=this.minMax(dt);
-    
+    // const mm=this.minMax(dt);
+
   }
   /** Pone el carro en posicion y velocidad aleatoria */
   offsetize() {
-    this.carro.velocity.x = Math.random() * 5 - 2.5;
+    this.carro.velocity.x = Math.random() * 8 - 4;
     this.carro.position.x = this.rndNext(100, 550);
     this.rangeForce.nativeElement.focus();
   }
@@ -162,7 +256,9 @@ export class InvPendComponent implements OnInit {
     if (this.recordedCount > 1000) {
       this.enableRecord = false;
     }
-    const din = {pos: this.carro.position.x - 300, vel: this.carro.velocity.x, acc: this.carro.acceleration.x};
+    this.carroX= this.carro.position.x - 300;
+    this.carroVX=this.carro.velocity.x;
+    const din = {pos: this.carroX, vel: this.carroVX, acc: this.carro.acceleration.x};
     const dout = this.horForz.x;
     this.recordedDin.push(din);
     this.recordedDout.push(dout);
@@ -171,13 +267,13 @@ export class InvPendComponent implements OnInit {
   }
 
   changeForce(f: number) {
-    console.log(f);
+    console.log('changeForce:' + f);
   }
 
   /** Respuesta al  evento de cambio del slider */
-  changeForce2(f: number) {
-    console.log('->' + f);
-    this.horForz.x = f / 10;
+  changeForce2(f: string) {
+    console.log('changeForce2:' + f);
+    this.horForz.x = Number.parseFloat(f);
   }
 
   /** Configuracion del p5 */
@@ -204,7 +300,7 @@ export class InvPendComponent implements OnInit {
     this.carro = new Carro(this.canvasP5, 300, 350);
     this.gravity = this.canvasP5.createVector(0, 0.1 * 8);
     this.horForz = this.canvasP5.createVector(0, 0);
-    this.fricForz=this.canvasP5.createVector(0,0);
+    this.fricForz = this.canvasP5.createVector(0, 0);
   }
 
   /** Pintado que se ejecuta cuando se hace el redraw() */
@@ -268,11 +364,11 @@ export class InvPendComponent implements OnInit {
       // Los datos ya vienen mezclados, no hace falta usar el suffle
       // Conversion a tensor
       const inputs = dIn.map(d => [d.pos, d.vel, d.acc]);
-      const inputTensor = tf.tensor2d(inputs);
+      const inputTensor = tf.tensor(inputs, [inputs.length, 3]);
       const labelTensor = tf.tensor2d(dOut, [dOut.length, 1]);
       // Normalización de todos los datos al rango 0-1
-      const din=this.normalize(inputTensor);
-      const dout=this.normalize(labelTensor);
+      const din = this.normalize(inputTensor);
+      const dout = this.normalize(labelTensor);
       return {din, dout};
     });
     return res;
@@ -282,17 +378,20 @@ export class InvPendComponent implements OnInit {
    * @param d Tensor de entrada
    */
   protected normalize(d: tf.Tensor) {
-    const r=tf.tidy(()=>{
-      const td=d.transpose(); // Para normalizar las columnas
-      const axis=td.rank-1; //Se generaliza el concepto de max min
-      const min=td.min(axis, true);
-      const max=td.max(axis, true);
-      const range=max.sub(min);
-      const td2=td.sub(min).div(range);
-      const res=td2.transpose();  // Volvemos al orden inicial
-      const amin=Array.from(min.dataSync());
-      const amax=Array.from(max.dataSync());
-      return {data:res, min:amin, max:amax};
+    const r = tf.tidy(() => {
+      const td = d.transpose(); // Para normalizar las columnas
+      const axis = td.rank - 1; // Se generaliza el concepto de max min
+      const min = td.min(axis, true);
+      const max = td.max(axis, true);
+      const range = max.sub(min);
+      const td2 = td.sub(min).div(range);
+      const res = td2.transpose();  // Volvemos al orden inicial
+      const amin = Array.from(min.dataSync());
+      const amax = Array.from(max.dataSync());
+      return {
+        data: res,
+        range: {min: amin, max: amax}
+      };
     });
     return r;
   }
