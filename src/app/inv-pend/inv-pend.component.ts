@@ -35,6 +35,7 @@ export class InvPendComponent implements OnInit {
   fricForz: p5.Vector;
   carroX=0;
   carroVX=0;
+  centerPos=350;
   enableRecord = false;
   recordedDin: Array<IDataIn> = [];
   recordedDout: Array<number> = [];
