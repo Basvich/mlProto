@@ -33,9 +33,9 @@ export class InvPendComponent implements OnInit {
   gravity: p5.Vector;
   horForz: p5.Vector;
   fricForz: p5.Vector;
-  carroX=0;
-  carroVX=0;
-  centerPos=350;
+  carroX = 0;
+  carroVX = 0;
+  centerPos = 300;
   enableRecord = false;
   recordedDin: Array<IDataIn> = [];
   recordedDout: Array<number> = [];
@@ -63,6 +63,16 @@ export class InvPendComponent implements OnInit {
   /** Accion que se ejecuta en cada ciclo */
   cycle() {
     if (this.iaOn) this.makePrediction();
+    let mx = this.canvasP5.mouseX;
+    const my = this.canvasP5.mouseY;
+    if (!this.iaOn) {
+      if (mx > 0 && mx < 600 && my < 400) {
+        mx -= this.centerPos;
+        this.horForz.x = mx * 0.002;
+      } else {
+        this.horForz.x = 0;
+      }
+    }
     this.fricForz.x = -this.carro.velocity.x * 0.05;
     this.bola.applyForce(this.gravity);
     this.carro.applyForce(p5.Vector.add(this.fricForz, this.horForz));
@@ -72,7 +82,7 @@ export class InvPendComponent implements OnInit {
     this.canvasP5.redraw();
     this.bola.checkEdges();
     if (this.enableRecord) {
-      if (this.cycleCount % 5 === 0) this.recordSample();
+      if (this.cycleCount % 4 === 0) this.recordSample();
     }
     this.cycleCount++;
   }
@@ -136,17 +146,17 @@ export class InvPendComponent implements OnInit {
   }
 
   makePrediction() {
-    this.carroX=this.carro.position.x - 300;
-    this.carroVX=this.carro.velocity.x;
+    this.carroX = this.carro.position.x - 300;
+    this.carroVX = this.carro.velocity.x;
     tf.tidy(() => {
-      const dIn = [this.carroX ,this.carroVX=this.carro.velocity.x , this.carro.acceleration.x];
+      const dIn = [this.carroX, this.carroVX = this.carro.velocity.x, this.carro.acceleration.x];
       const tIn = tf.tensor(dIn, [1, 3]); // tf.tensor3d(dIn);
       // tIn.print();
       const tIn2 = tIn.sub(this.rangeIn.min).div(this.rangeIn.dif);
       // tIn2.print();
       const preds = this.model.predict(tIn2) as tf.Tensor;
       if (preds) {
-       // (preds as tf.Tensor).print();
+        // (preds as tf.Tensor).print();
         const unNormPreds = preds.mul(this.rangeOut.dif).add(this.rangeOut.min);
         const d = unNormPreds.dataSync()[0];
         this.horForz.x = d;
@@ -171,18 +181,18 @@ export class InvPendComponent implements OnInit {
 
   showDataIn(velFilter: number) {
     // Load and plot the original input data that we are going to train on.
-    const d1=this.recordedDin.map((d,i)=>({
-      pos:d.pos,
-      vel:d.vel,
-      f:this.recordedDout[i]
+    const d1 = this.recordedDin.map((d, i) => ({
+      pos: d.pos,
+      vel: d.vel,
+      f: this.recordedDout[i]
     }));
-    const d2=d1.filter((d)=>Math.abs(d.vel-velFilter)<0.2);
-    const values = d2.map( (d,i: number) => ({
+    const d2 = d1.filter((d) => Math.abs(d.vel - velFilter) < 0.2);
+    const values = d2.map((d, i: number) => ({
       x: d.pos,
       y: d.f
     }));
-    
-    
+
+
 
     tfvis.render.scatterplot(
       {name: 'Posicion v Acc'},
@@ -241,12 +251,11 @@ export class InvPendComponent implements OnInit {
     const tdt3 = tdt2.transpose();
     tdt3.print();
     // const mm=this.minMax(dt);
-
   }
   /** Pone el carro en posicion y velocidad aleatoria */
   offsetize() {
-    this.carro.velocity.x = Math.random() * 8 - 4;
-    this.carro.position.x = this.rndNext(100, 550);
+    this.carro.velocity.x = Math.random() * 10 - 5;
+    this.carro.position.x = this.rndNext(50, 550);
     this.rangeForce.nativeElement.focus();
   }
 
@@ -257,8 +266,8 @@ export class InvPendComponent implements OnInit {
     if (this.recordedCount > 1000) {
       this.enableRecord = false;
     }
-    this.carroX= this.carro.position.x - 300;
-    this.carroVX=this.carro.velocity.x;
+    this.carroX = this.carro.position.x - this.centerPos;
+    this.carroVX = this.carro.velocity.x;
     const din = {pos: this.carroX, vel: this.carroVX, acc: this.carro.acceleration.x};
     const dout = this.horForz.x;
     this.recordedDin.push(din);
@@ -273,6 +282,7 @@ export class InvPendComponent implements OnInit {
 
   /** Respuesta al  evento de cambio del slider */
   changeForce2(f: string) {
+    return;
     console.log('changeForce2:' + f);
     this.horForz.x = Number.parseFloat(f);
   }
@@ -298,7 +308,7 @@ export class InvPendComponent implements OnInit {
   /** Inicialización de los objectos gráficos */
   protected setupGObjects() {
     this.bola = new Bola(this.canvasP5, 50, 100);
-    this.carro = new Carro(this.canvasP5, 300, 350);
+    this.carro = new Carro(this.canvasP5, this.centerPos, 350);
     this.gravity = this.canvasP5.createVector(0, 0.1 * 8);
     this.horForz = this.canvasP5.createVector(0, 0);
     this.fricForz = this.canvasP5.createVector(0, 0);
@@ -308,7 +318,7 @@ export class InvPendComponent implements OnInit {
   protected draw() {
     this.canvasP5.background(127);
     this.canvasP5.stroke(153);
-    this.canvasP5.line(300, 0, 300, 400);
+    this.canvasP5.line(this.centerPos, 0, this.centerPos, 400);
     this.canvasP5.line(0, 350, 600, 350);
     this.bola.display();
     this.carro.display();
