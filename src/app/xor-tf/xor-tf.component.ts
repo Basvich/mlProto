@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 // import {  Tensor } from '@tensorflow/tfjs';
 import * as p5 from 'p5';
 // import 'p5/lib/addons/p5.sound';
-import 'p5/lib/addons/p5.dom';
+// import 'p5/lib/addons/p5.dom';
 import * as Rx from 'rxjs';
 // import { timingSafeEqual } from 'crypto';
 import * as netUtils from '../../utils/neutils';

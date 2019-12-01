@@ -8,7 +8,6 @@ import { map, mergeMap } from 'rxjs/operators';
 // import * as ml5 from 'ml5';
 import * as p5 from 'p5';
 import 'p5/lib/addons/p5.sound';
-import 'p5/lib/addons/p5.dom';
 import { from, of } from 'rxjs';
 import { pad4d, math } from '@tensorflow/tfjs-core';
 
