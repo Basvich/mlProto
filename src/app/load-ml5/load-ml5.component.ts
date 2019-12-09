@@ -8,7 +8,6 @@ import { map, mergeMap } from 'rxjs/operators';
 // import * as ml5 from 'ml5';
 import * as p5 from 'p5';
 import 'p5/lib/addons/p5.sound';
-import 'p5/lib/addons/p5.dom';
 import { from, of } from 'rxjs';
 import { pad4d, math } from '@tensorflow/tfjs-core';
 
@@ -27,7 +26,7 @@ export class LoadMl5Component implements OnInit {
   featureExtractor: any;
   classifier: any;
   currImgNameTest: string = null;
-  @ViewChild('miImg') viewImg: ElementRef;
+  @ViewChild('miImg', {static: false}) viewImg: ElementRef;
   constructor(private http: HttpClient) { }
 
   ngOnInit() {

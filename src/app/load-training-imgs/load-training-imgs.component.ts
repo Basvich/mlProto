@@ -1,10 +1,8 @@
 import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
-import {UploadEvent, UploadFile, FileSystemFileEntry, FileSystemDirectoryEntry, FileDropModule} from 'ngx-file-drop';
+import {FileSystemFileEntry, FileSystemDirectoryEntry, NgxFileDropEntry} from 'ngx-file-drop';
 import * as Rx from 'rxjs';
 import {any, Tensor3D, Tensor} from '@tensorflow/tfjs';
-import {forEach} from '@angular/router/src/utils/collection';
 import {delay, mergeMap, map, retry} from 'rxjs/operators';
-import {interceptingHandler} from '@angular/common/http/src/module';
 import * as tf from '@tensorflow/tfjs';
 import {MlImgClassifier, IImgLabel, IResPredict} from './ml-img-classifier';
 import MLClassifier from './index';
@@ -45,7 +43,7 @@ interface Ifl3 extends Ifl2 {
 })
 export class LoadTrainingImgsComponent implements OnInit {
   /** Temporal para probar el mostrar estados directamente */
-  @ViewChild('myMainId') myMainId: ElementRef;
+  @ViewChild('myMainId', {static: false}) myMainId: ElementRef;
   constructor() {}
 
   protected bagClassifier: MlImgClassifier;
@@ -56,13 +54,13 @@ export class LoadTrainingImgsComponent implements OnInit {
   /** copia de las imagenes anteriores procesadas a tensor */
   protected traindedData: ImgLabel[];
 
-  public files: UploadFile[] = [];
+  public files: NgxFileDropEntry[] = [];
   /** fuente de la imagen de test */
   public testImageUrl = null;
 
   public fileName = 'miNet';
 
-  @ViewChild('miImg') imgPreview: ElementRef;
+  @ViewChild('miImg', {static: false}) imgPreview: ElementRef;
   public testImgLabel: string;
 
   deepDiffMapper = function deepDiffMapper() {
@@ -328,10 +326,10 @@ export class LoadTrainingImgsComponent implements OnInit {
   }
 
   /** Funcion de ejemplo para el drop de ficheros */
-  public dropped(event: UploadEvent) {
+  public dropped(files: NgxFileDropEntry[]) {
     this.testMemory('Antes de procesar imagenes');
-    this.files = event.files;
-    for (const droppedFile of event.files) {
+    this.files = files;
+    for (const droppedFile of files) {
       // Is it a file?
       if (droppedFile.fileEntry.isFile) {
         const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
@@ -351,12 +349,12 @@ export class LoadTrainingImgsComponent implements OnInit {
    *
    * @param event - Datos con la informacion soltada
    */
-  public dropped2(event: UploadEvent) {
+  public dropped2(files: NgxFileDropEntry[]) {
     const thats = this;
     const ch = (thats.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sfiles');
     this.showInfo(ch, 'loading...', 'badge badge-warning');
     this.testMemory('Antes de dropped2()');
-    const files = event.files;
+    //const files = files;
     let cc = 0;
     const provDataIn = [];
     this.provData2 = [];
@@ -386,11 +384,11 @@ export class LoadTrainingImgsComponent implements OnInit {
    * 
    * @param event - Datos de los ficheros soltados
    */
-  public dropped3(event: UploadEvent) {
+  public dropped3(files: NgxFileDropEntry[]) {
     const thats = this;
     const ch = (this.myMainId.nativeElement as HTMLElement).ownerDocument.getElementById('sTestFile');
     this.showInfo(ch, 'Analizing', 'badge badge-warning');
-    const files: UploadFile[] = event.files;
+    
     let files2 = files.filter(file => file.fileEntry.isFile);
     if (files2.length < 1) return;
     files2 = files2.slice(0, 1);
@@ -453,7 +451,7 @@ export class LoadTrainingImgsComponent implements OnInit {
  *
  * @param files - array de datos de imagenes junto con sus labels
  */
-function imageLabels$(files: UploadFile[]): Rx.Observable<any> {
+function imageLabels$(files: NgxFileDropEntry[]): Rx.Observable<any> {
   if (!files) return;
   const thats = this;
   const files2 = files.filter(file => file.fileEntry.isFile);
